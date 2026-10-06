@@ -20,6 +20,14 @@ export default class Player {
     this.acceleration = 3600;
     this.deceleration = 4800;
 
+    // Parkour
+    this.bulletJumpSpeed = 1200;
+    this.bulletJumpCooldown = 0.3;
+    this.bulletJumpTimer = 0;
+    this.isBulletJumping = false;
+    this.bulletJumpDirection = { x: 0, y: 0 };
+    this.bulletJumpVisualTimer = 0;
+
     this.angle = 0;
 
     // Excalibur stats (Rank 30)
@@ -153,6 +161,28 @@ export default class Player {
 
     this.x += this.velocity.x * dt;
     this.y += this.velocity.y * dt;
+
+    // Bullet Jump cooldown
+    if (this.bulletJumpTimer > 0) this.bulletJumpTimer -= dt;
+
+    // Bullet Jump (Ctrl + Space) - directional dash in aim direction
+    if (input.isKeyDown('control') && input.isKeyPressed('space') && this.bulletJumpTimer <= 0) {
+      this.bulletJumpTimer = this.bulletJumpCooldown;
+      this.bulletJumpVisualTimer = 0.15; // visual effect duration
+      this.bulletJumpDirection.x = Math.cos(this.angle);
+      this.bulletJumpDirection.y = Math.sin(this.angle);
+      this.velocity.x = this.bulletJumpDirection.x * this.bulletJumpSpeed;
+      this.velocity.y = this.bulletJumpDirection.y * this.bulletJumpSpeed;
+      this.isBulletJumping = true;
+      audioManager.play('swordSlash1', 0.4); // placeholder sound
+    }
+
+    // Bullet Jump visual timer
+    if (this.bulletJumpVisualTimer > 0) this.bulletJumpVisualTimer -= dt;
+    // Reset isBulletJumping when velocity drops below threshold
+    if (this.isBulletJumping && Math.hypot(this.velocity.x, this.velocity.y) < this.moveSpeed * 1.5) {
+      this.isBulletJumping = false;
+    }
 
     // 2. Shields recharge
     this.timeSinceDamage += dt;
@@ -442,6 +472,35 @@ export default class Player {
         ctx.arc(0, 0, 15 * (1 - parryProgress * 2), 0, Math.PI * 2);
         ctx.fill();
       }
+    }
+
+    // Bullet Jump visual effect (directional energy trail)
+    if (this.bulletJumpVisualTimer > 0) {
+      const progress = 1 - this.bulletJumpVisualTimer / 0.15;
+      const trailLength = 40 * progress;
+      const alpha = 0.8 * (1 - progress);
+
+      ctx.save();
+      // Rotate to bullet jump direction
+      const bjAngle = Math.atan2(this.bulletJumpDirection.y, this.bulletJumpDirection.x);
+      ctx.rotate(bjAngle - this.angle);
+
+      // Energy trail
+      ctx.strokeStyle = `rgba(100, 200, 255, ${alpha})`;
+      ctx.lineWidth = 8 * (1 - progress);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-trailLength, 0);
+      ctx.lineTo(0, 0);
+      ctx.stroke();
+
+      // Glow at origin
+      ctx.fillStyle = `rgba(100, 200, 255, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, 12 * (1 - progress), 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
     }
 
     ctx.restore();
