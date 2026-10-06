@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flatframe - 2D Shooter</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+  <link rel="stylesheet" href="src/assets/style.css" />
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="hud">
+      <!-- Top-left: vitals -->
+      <div id="vitals" class="hud-region top-left">
+        <div id="shield-bar" class="bar shield">
+          <div id="shield-fill" class="bar-fill"></div>
+          <span class="bar-label">SHIELD</span>
+          <span id="shield-display" class="bar-value">370 / 370</span>
+        </div>
+        <div id="health-bar" class="bar health">
+          <div id="health-fill" class="bar-fill"></div>
+          <span class="bar-label">HEALTH</span>
+          <span id="health-display" class="bar-value">370 / 370</span>
+        </div>
+        <div class="chips">
+          <span id="armor-display" class="chip">ARMOR 240</span>
+          <span id="energy-display" class="chip">ENERGY 150</span>
+        </div>
+      </div>
+
+      <!-- Top-centre: mission banner -->
+      <div class="hud-region top-center">
+        <p id="mission-display">EXTERMINATE</p>
+        <p id="objective-display">Eliminated 0 / 24</p>
+        <div id="objective-bar" class="objective-bar">
+          <div id="objective-fill" class="objective-fill"></div>
+        </div>
+        <p id="wave-display">Enemies 0 / 5</p>
+      </div>
+
+      <!-- Bottom-right: weapon and ammo -->
+      <div id="ammo-panel" class="hud-region bottom-right">
+        <p id="weapon-display">Braton</p>
+        <p id="weapon-stats">24.0 dmg · 8.75 r/s · 45 mag</p>
+        <div class="ammo-counts">
+          <span id="ammo-display">45</span>
+          <span id="reserve-display">/ 540</span>
+        </div>
+        <div id="mag-bar" class="mag-bar">
+          <div id="mag-fill" class="mag-fill"></div>
+        </div>
+        <p id="reload-display"></p>
+      </div>
+
+      <!-- Bottom-left: dev read-out -->
+      <div class="hud-region bottom-left">
+        <p id="pos-display">POS 0, 0</p>
+        <p id="angle-display">ANGLE 0°</p>
+      </div>
+    </div>
+
+    <div id="damage-flash"></div>
+  </div>
+
+  <script type="module" src="src/game.js"></script>
+</body>
+</html>
