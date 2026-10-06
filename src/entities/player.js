@@ -81,6 +81,8 @@ export default class Player {
   set armor(val) { this.healthComponent.armor = val; }
 
   update(dt, input, projectiles = [], enemies = []) {
+    this.healthComponent.update(dt);
+
     if (!this.alive) return;
     if (this.isBleedingOut) {
       if (!this.awaitingRevive) {
