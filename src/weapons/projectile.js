@@ -70,7 +70,7 @@ export default class Projectile {
       const startOffsetY = target.y - this.y;
       const hitRadius = this.radius + (target.radius ?? 16);
       if (startOffsetX * startOffsetX + startOffsetY * startOffsetY <= hitRadius * hitRadius) {
-        target.takeDamage(this.hit);
+        target.takeDamage(this.hit, this.hit.sourceX, this.hit.sourceY);
         if (this.punchThrough > 0) {
           this.punchThrough -= 1;
         } else {
@@ -97,7 +97,7 @@ export default class Projectile {
         const diffY = target.y - closestY;
 
         if (diffX * diffX + diffY * diffY <= hitRadius * hitRadius) {
-          target.takeDamage(this.hit);
+          target.takeDamage(this.hit, this.hit.sourceX, this.hit.sourceY);
 
           if (this.punchThrough > 0) {
             this.punchThrough -= 1;
@@ -126,7 +126,7 @@ export default class Projectile {
       const endOffsetY = target.y - this.y;
       const hitRadius = this.radius + (target.radius ?? 16);
       if (endOffsetX * endOffsetX + endOffsetY * endOffsetY <= hitRadius * hitRadius) {
-        target.takeDamage(this.hit);
+        target.takeDamage(this.hit, this.hit.sourceX, this.hit.sourceY);
         if (this.punchThrough > 0) {
           this.punchThrough -= 1;
         } else {

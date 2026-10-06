@@ -1,4 +1,4 @@
-import BaseEnemy from '../base.js';
+import BaseEnemy from '../../base.js';
 
 export default class Butcher extends BaseEnemy {
   constructor(x, y, options = {}) {

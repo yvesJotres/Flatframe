@@ -113,7 +113,7 @@ export default class MeleeWeapon extends Weapon {
       // Apply damage
       const hit = this.rollHit();
       hit.total *= comboMult;
-      enemy.takeDamage(hit);
+      enemy.takeDamage(hit, player.x, player.y);
       struck.push(enemy);
     }
 

@@ -114,6 +114,8 @@ export default class Weapon {
       const spreadRad = ((this.currentSpread * Math.PI) / 180) * Math.random() * spreadSign;
       const direction = rotateDirection(baseX, baseY, spreadRad);
       const hit = this.rollHit();
+      hit.sourceX = player.x;
+      hit.sourceY = player.y;
 
       projectiles.push(
         new Projectile(

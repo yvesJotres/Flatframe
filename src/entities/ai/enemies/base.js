@@ -70,6 +70,11 @@ export default class BaseEnemy {
     this.attackTimer = 0;
 
     this.focus = null;
+    this.patrolAngle = Math.random() * Math.PI * 2;
+    this.patrolTimer = 2 + Math.random() * 3;
+    this.alertTimer = 0; // seconds enemy stays alerted after taking damage
+    this.lastDamageAngle = 0; // direction from which damage came
+
   }
   
   // Backward compatibility getters
@@ -90,12 +95,21 @@ export default class BaseEnemy {
   }
 
 
-  takeDamage(damage) {
+  takeDamage(damage, sourceX = null, sourceY = null) {
     const hit = typeof damage === 'number'
       ? { total: damage, slash: 0, status: null }
       : damage;
 
     const damageTaken = this.health.takeDamage(hit, 0);
+
+    // Alert the enemy if they took damage and don't have a target
+    if (!this.focus && damageTaken > 0) {
+      this.patrolTimer = 0; 
+      this.alertTimer = 3; // 3 seconds of alert state
+      if (sourceX !== null && sourceY !== null) {
+        this.lastDamageAngle = Math.atan2(sourceY - this.y, sourceX - this.x);
+      }
+    }
 
     // Status effect application via Damage System factory
     if (hit.status && STATUS_EFFECT_FACTORIES[hit.status] && !this.health.isDead) {
@@ -117,17 +131,32 @@ export default class BaseEnemy {
     const aliveCandidates = candidates.filter(isTargetAlive);
 
     if (aliveCandidates.length === 0) {
-      // No eligible target (e.g. the player is downed): drift idly so the
-      // unit reads as alive and roaming rather than frozen.
-      this.wanderTimer = (this.wanderTimer ?? 0) - dt;
-      if (this.wanderTimer <= 0) {
-        this.wanderTimer = 1.5 + Math.random() * 2;
-        const wanderAngle = Math.random() * Math.PI * 2;
-        this.wanderDir = { x: Math.cos(wanderAngle), y: Math.sin(wanderAngle) };
+      // No eligible target
+      this.alertTimer = Math.max(0, this.alertTimer - dt);
+      
+      if (this.alertTimer > 0) {
+        // Alerted: turn and move toward last known damage source
+        const targetAngle = this.lastDamageAngle;
+        this.rotateTowards(targetAngle, dt);
+        this.applyVelocity(
+          Math.cos(targetAngle) * 0.7, 
+          Math.sin(targetAngle) * 0.7, 
+          dt, 
+          this.acceleration * 0.7
+        );
+        return;
       }
-      const drift = this.wanderDir ?? { x: 0, y: 0 };
-      this.applyVelocity(drift.x * 0.3, drift.y * 0.3, dt, this.acceleration * 0.5);
-      this.angle = Math.atan2(drift.y, drift.x);
+      
+      // No target, not alerted: patrol
+      this.patrolTimer -= dt;
+      if (this.patrolTimer <= 0) {
+        this.patrolTimer = 3 + Math.random() * 4;
+        this.patrolAngle += (Math.random() - 0.5) * Math.PI;
+      }
+      const dirX = Math.cos(this.patrolAngle);
+      const dirY = Math.sin(this.patrolAngle);
+      this.applyVelocity(dirX * 0.5, dirY * 0.5, dt, this.acceleration * 0.5);
+      this.angle = this.patrolAngle;
       return;
     }
 

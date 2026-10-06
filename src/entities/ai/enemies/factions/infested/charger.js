@@ -1,4 +1,4 @@
-import BaseEnemy from '../base.js';
+import BaseEnemy from '../../base.js';
 
 export default class Charger extends BaseEnemy {
   constructor(x, y, options = {}) {

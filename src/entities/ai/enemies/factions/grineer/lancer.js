@@ -1,6 +1,6 @@
-import BaseEnemy from '../base.js';
-import PrimaryWeapon from '../../../weapons/primary_weapon.js';
-import { scaleStat } from '../../../core/scaling.js';
+import BaseEnemy from '../../base.js';
+import PrimaryWeapon from '../../../../../weapons/primary_weapon.js';
+import { scaleStat } from '../../../../../core/scaling.js';
 
 const ENEMY_WEAPON = 'Grakata';
 

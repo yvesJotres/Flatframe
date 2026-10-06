@@ -1,7 +1,7 @@
 import BaseEnemy from '../base.js';
-import { UNITS_PER_METER } from '../../../core/constants.js';
-import PrimaryWeapon from '../../../weapons/primary_weapon.js';
-import { scaleStat } from '../../../core/scaling.js';
+import { UNITS_PER_METER } from '../../../../../core/constants.js';
+import PrimaryWeapon from '../../../../../weapons/primary_weapon.js';
+import { scaleStat } from '../../../../../core/scaling.js';
 
 export default class Trooper extends BaseEnemy {
   constructor(x, y, options = {}) {

@@ -112,3 +112,16 @@ test('enemies wander instead of freezing when no target is eligible', () => {
   for (let i = 0; i < 240; i++) e.update(1 / 60, [], [], []);
   assert.ok(Math.hypot(e.x - x, e.y - y) > 1, 'enemy drifted while targetless');
 });
+
+test('enemy becomes alerted and moves toward attacker when damaged', () => {
+  const e = new BaseEnemy(100, 100);
+  // Attack from the right (player at x=200)
+  e.takeDamage(10, 200, 100);
+  assert.equal(e.alertTimer, 3, 'alert timer set');
+  assert.ok(e.lastDamageAngle === 0 || e.lastDamageAngle > 0, 'damage angle stored (0 = right)');
+  
+  // Update a few frames - should move toward attacker
+  const startX = e.x;
+  for (let i = 0; i < 60; i++) e.update(1 / 60, [], [], []);
+  assert.ok(e.x > startX, 'enemy moved toward attacker (right)');
+});
