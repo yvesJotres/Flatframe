@@ -125,3 +125,16 @@ test('enemy becomes alerted and moves toward attacker when damaged', () => {
   for (let i = 0; i < 60; i++) e.update(1 / 60, [], [], []);
   assert.ok(e.x > startX, 'enemy moved toward attacker (right)');
 });
+
+test('enemy acquires player as focus when alerted and player in range', () => {
+  const e = new BaseEnemy(100, 100);
+  const player = { x: 300, y: 100, isPlayer: true, alive: true, hp: 100, health: { isDead: false } };
+  
+  // Attack from far away (outside normal vision)
+  e.takeDamage(10, 300, 100);
+  assert.equal(e.alertTimer, 3);
+  
+  // Update with player in candidates - should acquire focus
+  e.update(1/60, player, [], []);
+  assert.equal(e.focus, player, 'enemy acquired player as focus while alerted');
+});

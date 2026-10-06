@@ -130,6 +130,19 @@ export default class BaseEnemy {
     const candidates = Array.isArray(target) ? target : [target];
     const aliveCandidates = candidates.filter(isTargetAlive);
 
+    // If alerted and no focus, try to acquire player in alert range
+    if (!this.focus && this.alertTimer > 0) {
+      const playerCandidate = aliveCandidates.find(c => c === target || c.isPlayer);
+      if (playerCandidate) {
+        const dx = playerCandidate.x - this.x;
+        const dy = playerCandidate.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 600) { // alert acquisition range
+          this.focus = playerCandidate;
+        }
+      }
+    }
+
     if (aliveCandidates.length === 0) {
       // No eligible target
       this.alertTimer = Math.max(0, this.alertTimer - dt);
