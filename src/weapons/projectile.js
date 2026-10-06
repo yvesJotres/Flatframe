@@ -63,6 +63,23 @@ export default class Projectile {
     const nextY = this.y + moveY;
     const segmentLengthSq = moveX * moveX + moveY * moveY;
 
+    // Check collision at start position (in case projectile spawns inside target)
+    for (const target of targets) {
+      if (!isAlive(target)) continue;
+      const startOffsetX = target.x - this.x;
+      const startOffsetY = target.y - this.y;
+      const hitRadius = this.radius + (target.radius ?? 16);
+      if (startOffsetX * startOffsetX + startOffsetY * startOffsetY <= hitRadius * hitRadius) {
+        target.takeDamage(this.hit);
+        if (this.punchThrough > 0) {
+          this.punchThrough -= 1;
+        } else {
+          this.active = false;
+          return;
+        }
+      }
+    }
+
     if (segmentLengthSq > 0) {
       for (const target of targets) {
         if (!isAlive(target)) continue;
@@ -101,6 +118,23 @@ export default class Projectile {
     this.x = nextX;
     this.y = nextY;
     this.distanceTravelled += stepDistance;
+
+    // Check collision at end position (catch tunneling where segment missed but end is inside)
+    for (const target of targets) {
+      if (!isAlive(target)) continue;
+      const endOffsetX = target.x - this.x;
+      const endOffsetY = target.y - this.y;
+      const hitRadius = this.radius + (target.radius ?? 16);
+      if (endOffsetX * endOffsetX + endOffsetY * endOffsetY <= hitRadius * hitRadius) {
+        target.takeDamage(this.hit);
+        if (this.punchThrough > 0) {
+          this.punchThrough -= 1;
+        } else {
+          this.active = false;
+          return;
+        }
+      }
+    }
 
     if (this.distanceTravelled >= this.maxDistance) {
       this.active = false;
