@@ -12,6 +12,22 @@ export function isTargetAlive(target) {
   return typeof target.takeDamage === 'function';
 }
 
+/** Returns true if target is within enemy's vision cone. */
+export function isInVisionCone(enemy, target) {
+  const dx = target.x - enemy.x;
+  const dy = target.y - enemy.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance === 0) return true;
+
+  const angleToTarget = Math.atan2(dy, dx);
+  let diff = angleToTarget - enemy.angle;
+  // Normalize to [-PI, PI]
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+
+  return Math.abs(diff) <= enemy.visionArc / 2;
+}
+
 export default class BaseEnemy {
   constructor(x, y, options = {}) {
     this.x = x;
@@ -32,6 +48,11 @@ export default class BaseEnemy {
     this.acceleration = options.acceleration ?? 900;
     this.deceleration = options.deceleration ?? 1200;
     this.angle = 0;
+
+    // AI Perception
+    this.visionArc = options.visionArc ?? (Math.PI * 2 / 3); // 120° default (60° each side)
+    this.turnRate = options.turnRate ?? 4.0; // radians per second
+    this.aimTolerance = options.aimTolerance ?? 0.2; // ~11° tolerance to fire
 
     // Combat defaults
     this.color = options.color ?? '#e5484d';
@@ -111,15 +132,24 @@ export default class BaseEnemy {
     }
 
     const currentFocusAlive = this.focus && isTargetAlive(this.focus);
-    if (!currentFocusAlive) {
-      this.focus = aliveCandidates.reduce((best, candidate) => {
-        if (!best) return candidate;
-        const bestThreat = best.threat ?? 1;
-        const candidateThreat = candidate.threat ?? 1;
-        const bestDist = Math.hypot(best.x - this.x, best.y - this.y) / bestThreat;
-        const candidateDist = Math.hypot(candidate.x - this.x, candidate.y - this.y) / candidateThreat;
-        return candidateDist < bestDist ? candidate : best;
-      }, null);
+    // Keep focus if alive and still in vision cone (with some persistence)
+    if (currentFocusAlive && isInVisionCone(this, this.focus)) {
+      // Keep current focus
+    } else {
+      // Find new focus only from candidates in vision cone
+      const visibleCandidates = aliveCandidates.filter(c => isInVisionCone(this, c));
+      if (visibleCandidates.length > 0) {
+        this.focus = visibleCandidates.reduce((best, candidate) => {
+          if (!best) return candidate;
+          const bestThreat = best.threat ?? 1;
+          const candidateThreat = candidate.threat ?? 1;
+          const bestDist = Math.hypot(best.x - this.x, best.y - this.y) / bestThreat;
+          const candidateDist = Math.hypot(candidate.x - this.x, candidate.y - this.y) / candidateThreat;
+          return candidateDist < bestDist ? candidate : best;
+        }, null);
+      } else {
+        this.focus = null; // Lost sight of all targets
+      }
     }
 
     if (this.focus) {
@@ -187,7 +217,25 @@ export default class BaseEnemy {
     }
 
     this.applyVelocity(moveX, moveY, dt, this.acceleration);
-    this.angle = Math.atan2(dy, dx);
+    // Smoothly rotate to face target
+    const targetAngle = Math.atan2(dy, dx);
+    this.rotateTowards(targetAngle, dt);
+  }
+
+  /** Smoothly rotate towards a target angle. */
+  rotateTowards(targetAngle, dt) {
+    let diff = targetAngle - this.angle;
+    // Normalize to [-PI, PI]
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+
+    const maxTurn = this.turnRate * dt;
+    if (Math.abs(diff) <= maxTurn) {
+      this.angle = targetAngle;
+      return true; // Aligned
+    }
+    this.angle += diff > 0 ? maxTurn : -maxTurn;
+    return false; // Still turning
   }
 
   /** Shared personal-space push so a pack does not collapse into one blob. */
@@ -225,6 +273,17 @@ export default class BaseEnemy {
       return;
     }
 
+    // Check if facing target within aim tolerance
+    const angleToTarget = Math.atan2(target.y - this.y, target.x - this.x);
+    let diff = angleToTarget - this.angle;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+
+    if (Math.abs(diff) > this.aimTolerance) {
+      this.aimTime = 0; // Reset aim if not facing target
+      return;
+    }
+
     this.aimTime += dt;
     if (this.aimTime < this.aimDelay) return;
 
@@ -255,7 +314,11 @@ export default class BaseEnemy {
     }
 
     this.applyVelocity(moveX, moveY, dt, this.acceleration);
-    if (distance > 0) this.angle = Math.atan2(dy, dx);
+    // Smoothly rotate to face target
+    if (distance > 0) {
+      const targetAngle = Math.atan2(dy, dx);
+      this.rotateTowards(targetAngle, dt);
+    }
   }
 
   /**
