@@ -1,5 +1,5 @@
 import Player from './entities/player.js';
-import Lancer from './entities/factions/grineer/lancer.js';
+import Lancer from './entities/ai/enemies/factions/grineer/lancer.js';
 import CryoPod from './entities/objective.js';
 import Hud from './ui/hud.js';
 import PauseMenu from './ui/menu.js';

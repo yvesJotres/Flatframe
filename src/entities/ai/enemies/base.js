@@ -1,8 +1,8 @@
-import { reduceDamage, STATUS_EFFECT_FACTORIES } from '../core/damage.js';
-import { approach } from '../core/movement.js';
-import { UNITS_PER_METER } from '../core/constants.js';
-import HealthComponent from '../core/health.js';
-import StatusManager from '../core/status.js';
+import { reduceDamage, STATUS_EFFECT_FACTORIES } from '../../../core/damage.js';
+import { approach } from '../../../core/movement.js';
+import { UNITS_PER_METER } from '../../../core/constants.js';
+import HealthComponent from '../../../core/health.js';
+import StatusManager from '../../../core/status.js';
 
 export function isTargetAlive(target) {
   if (!target) return false;

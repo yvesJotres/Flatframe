@@ -1,4 +1,4 @@
-import BaseEnemy from '../../enemy_base.js';
+import BaseEnemy from '../base.js';
 
 export default class Runner extends BaseEnemy {
   constructor(x, y, options = {}) {

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import Player from '../src/entities/player.js';
-import BaseEnemy from '../src/entities/enemy_base.js';
+import BaseEnemy from '../src/entities/ai/enemies/base.js';
 
 function noInput(overrides = {}) {
   return {
