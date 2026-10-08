@@ -80,8 +80,12 @@ export default class Player {
   get armor() { return this.healthComponent.armor; }
   set armor(val) { this.healthComponent.armor = val; }
 
-  update(dt, input, projectiles = [], enemies = []) {
+  update(dt, input, projectiles = [], enemies = [], camera = { x: 0, y: 0 }) {
     this.healthComponent.update(dt);
+
+    // Convert screen mouse to world coordinates
+    const mouseWorld = input.getWorldMousePos ? input.getWorldMousePos(camera)
+      : { x: input.mouse.x + camera.x, y: input.mouse.y + camera.y, down: input.mouse.down, rightDown: input.mouse.rightDown, middleDown: input.mouse.middleDown };
 
     if (!this.alive) return;
     if (this.isBleedingOut) {
@@ -133,11 +137,11 @@ export default class Player {
       if (this.currentWeapon !== this.secondaryWeapon) {
         this.currentWeapon = this.secondaryWeapon;
       }
-      this.angle = Math.atan2(input.mouse.y - this.y, input.mouse.x - this.x);
-      const firing = input.mouse.down;
+      this.angle = Math.atan2(mouseWorld.y - this.y, mouseWorld.x - this.x);
+      const firing = mouseWorld.down;
       this.secondaryWeapon.update(dt, firing);
       this.primaryWeapon.update(dt, false); // keep reload timers honest
-      if (firing) this.secondaryWeapon.fire(this, input.mouse, dt, projectiles);
+      if (firing) this.secondaryWeapon.fire(this, mouseWorld, dt, projectiles);
       if (input.isKeyPressed('r')) this.secondaryWeapon.startReload();
       if (this.meleeSwingTimer > 0) this.meleeSwingTimer -= dt;
       return;
@@ -196,12 +200,12 @@ export default class Player {
     }
 
     // 3. Aim toward mouse
-    this.angle = Math.atan2(input.mouse.y - this.y, input.mouse.x - this.x);
-    this.handleWeapons(dt, input, projectiles, enemies);
+    this.angle = Math.atan2(mouseWorld.y - this.y, mouseWorld.x - this.x);
+    this.handleWeapons(dt, input, projectiles, enemies, mouseWorld);
 
   }
 
-  handleWeapons(dt, input, projectiles, enemies) {
+  handleWeapons(dt, input, projectiles, enemies, mouseWorld) {
     if (this.lungeTarget) {
       if (this.lungeTarget.hp <= 0 || Math.hypot(this.lungeTarget.x - this.x, this.lungeTarget.y - this.y) < 10) {
         this.lungeTarget = null;
@@ -218,15 +222,15 @@ export default class Player {
         return;
       }
     }
-    const firing = input.mouse.down;
-    const heavyClick = input.mouse.middleDown;
+    const firing = mouseWorld.down;
+    const heavyClick = mouseWorld.middleDown;
     this.primaryWeapon.update(dt, firing && this.currentWeapon === this.primaryWeapon);
     this.secondaryWeapon.update(dt, firing && this.currentWeapon === this.secondaryWeapon);
 
     const isMeleeEquipped = this.currentWeapon === this.meleeWeapon;
 
     // Parry state management (right-click hold while melee equipped)
-    if (isMeleeEquipped && input.mouse.rightDown) {
+    if (isMeleeEquipped && mouseWorld.rightDown) {
       if (!this.meleeWeapon.isParrying) {
         this.meleeWeapon.startParry();
       }
@@ -236,9 +240,11 @@ export default class Player {
         this.meleeWeapon.perfectParryReady = true;
       }
       this.meleeWeapon.stopParry();
+    }
 
     // Auto-swing: if melee equipped, not parrying, no lunge active, and target in reach+arc
     if (isMeleeEquipped && !this.meleeWeapon.isParrying && !this.lungeTarget) {
+      const halfArc = this.meleeWeapon.arc / 2;
       const targetInfo = this.meleeWeapon.findBestTarget(this, enemies, halfArc);
       if (targetInfo.target) {
         const hits = this.meleeWeapon.melee(this, enemies);
@@ -274,19 +280,18 @@ export default class Player {
         }
       }
     }
-    }
 
     // 4. Normal melee swing (left click) or shooting
     if (firing) {
       if (isMeleeEquipped) {
         const hits = this.meleeWeapon.melee(this, enemies);
-        if (hits) { // null = still on cooldown; [] = a whiff that still swings
+        if (hits !== null) { // null = still on cooldown; [] = a whiff that still swings
           this.meleeSwingTimer = 0.15;
           this.meleeSwingHits = hits.map(e => ({ angle: Math.atan2(e.y - this.y, e.x - this.x), distance: Math.hypot(e.x - this.x, e.y - this.y) }));
           this.meleeSwingType = 'normal';
         }
       } else {
-        this.currentWeapon.fire(this, input.mouse, dt, projectiles);
+        this.currentWeapon.fire(this, mouseWorld, dt, projectiles);
       }
     }
 

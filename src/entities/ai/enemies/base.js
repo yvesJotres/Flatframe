@@ -137,7 +137,8 @@ export default class BaseEnemy {
         const dx = playerCandidate.x - this.x;
         const dy = playerCandidate.y - this.y;
         const dist = Math.hypot(dx, dy);
-        if (dist < 600) { // alert acquisition range
+        const alertRangeMeters = 50; // 50m alert acquisition range
+        if (dist < alertRangeMeters * UNITS_PER_METER) {
           this.focus = playerCandidate;
         }
       }

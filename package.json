@@ -1,6 +1,6 @@
 {
   "name": "flatframe",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "2D Warframe Top-Down Canvas Shooter",
   "main": "src/game.js",
   "type": "module",
@@ -15,4 +15,3 @@
     "live-server": "^1.2.1"
   }
 }
-

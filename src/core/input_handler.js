@@ -42,6 +42,16 @@ export class InputHandler {
   getMousePos() {
     return this.mouse;
   }
+
+  getWorldMousePos(camera = { x: 0, y: 0 }) {
+    return {
+      x: this.mouse.x + camera.x,
+      y: this.mouse.y + camera.y,
+      down: this.mouse.down,
+      rightDown: this.mouse.rightDown,
+      middleDown: this.mouse.middleDown
+    };
+  }
   isKeyDown(key) {
     return !!this.keys[key.toLowerCase()];
   }

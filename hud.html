@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUD Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            background: #444;
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 0.05em;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            padding: 3rem;
+            gap: 1rem;
+        }
+        /* Top Left - Objective */
+        .objective {
+            align-self: center;
+            justify-self: start;
+            font-size: 2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        /* Top Right - Vitals */
+                .hud-vitals {
+                    justify-self: end;
+                    align-self: start;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                    gap: 0;
+                }
+                .vital-values-row {
+                    display: flex;
+                    gap: 0;
+                    width: 400px;
+                    justify-content: flex-end;
+                }
+                .vital-value {
+                    font-size: 3.0rem;
+                    font-weight: 700;
+                    line-height: 1;
+                    white-space: nowrap;
+                }
+                .vital-value.shield { color: #0ED4FA; }
+                .vital-value.health { color: #CB3332; }
+
+                .vital-bars-row {
+                    display: flex;
+                    gap: 0;
+                    width: 200px;
+                    height: 10px;
+                }
+                .vital-bar {
+                    height: 100%;
+                    border-radius: 0;
+                }
+                .vital-bar.shield { background: #0ED4FA; }
+                .vital-bar.health { background: #CB3332; }
+        /* Bottom Right - Ammo */
+        .ammo {
+            grid-column: 2;
+            grid-row: 2;
+            justify-self: end;
+            align-self: end;
+            text-align: right;
+        }
+        .ammo-count {
+            font-size: 5rem;
+            font-weight: 600;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        .ammo-total {
+            font-size: 1.8rem;
+            opacity: 0.7;
+        }
+        .ammo-weapon {
+                    font-size: 1.25rem;
+                    opacity: 0.8;
+                    margin-top: 0.5rem;
+                }
+                /* Warframe name under vitals */
+                .vital-frame {
+                    font-size: 1.125rem;
+                    opacity: 0.8;
+                    margin-top: 0.5rem;
+                    text-align: right;
+                }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Objective (Top Left) -->
+    <div class="objective">CAPTURE THE TARGET</div>
+
+    <!-- Vitals (Top Right) -->
+                <div class="hud-vitals">
+                    <div class="vital-values-row">
+                        <span class="vital-value shield">100</span>
+                        <span class="vital-value health">100</span>
+                    </div>
+                    <div class="vital-bars-row">
+                        <div class="vital-bar shield" style="width: 200px;"></div>
+                        <div class="vital-bar health" style="width: 200px;"></div>
+                    </div>
+                    <div class="vital-frame">EXCALIBUR [30]</div>
+                </div>
+
+    <!-- Ammo (Bottom Right) -->
+    <div class="ammo">
+        <div class="ammo-count">45<span class="ammo-total">/540</span></div>
+        <div class="ammo-weapon">BRATON [30]</div>
+    </div>
+</body>
+</html>

@@ -9,6 +9,11 @@ export class MainMenu {
       { label: 'Defense', action: 'start-mission', mission: 'defense' },
       { label: 'Simulacrum', action: 'simulacrum' },
     ];
+    // Add World Builder option if dev mode
+    const isDev = new URLSearchParams(window.location.search).has('dev') || localStorage.getItem('devMode');
+    if (isDev) {
+      this.options.push({ label: 'World Builder', action: 'world-builder' });
+    }
     this.selectedIndex = 0;
     this.lastHoverIndex = -1; // hover blip only fires when this changes
   }

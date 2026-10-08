@@ -6,7 +6,7 @@ import Player from '../src/entities/player.js';
 // MeleeWeapon gates on performance.now(); prime lastMeleeTime into the past
 // so the *first* test swing is never gated by process-start uptime.
 function readyToSwing(weapon) {
-  weapon.lastMeleeTime = performance.now() - 1000;
+  weapon.lastMeleeTime = performance.now() - 2000;
 }
 
 function makeEnemy(x, y, opts = {}) {
@@ -156,18 +156,20 @@ test('Player: whiffed swing still shows the swing visual (meleeSwingTimer set)',
   player.currentWeapon = player.meleeWeapon;
   readyToSwing(player.meleeWeapon);
   const input = {
-    mouse: { x: 100, y: 0, down: true },
+    mouse: { x: 100, y: 0, down: true, rightDown: false, middleDown: false },
     isKeyPressed: () => false,
     isKeyDown: () => false,
   };
+  const mouseWorld = { x: 100, y: 0, down: true, rightDown: false, middleDown: false };
 
-  player.handleWeapons(0, input, [], []); // holding fire, no enemies → whiff
+  player.handleWeapons(0, input, [], [], mouseWorld); // holding fire, no enemies → whiff
+  console.log('After handleWeapons, meleeSwingTimer:', player.meleeSwingTimer);
   assert.equal(player.meleeSwingTimer, 0.15, 'whiff still swings visually');
   assert.deepEqual(player.meleeSwingHits, [], 'no hit sparks on a whiff');
 
   // Next frame: still on cooldown → gated (null) → visual must NOT re-arm.
   player.meleeSwingTimer = 0;
-  player.handleWeapons(0, input, [], []);
+  player.handleWeapons(0, input, [], [], mouseWorld);
   assert.equal(player.meleeSwingTimer, 0, 'gated swing does not re-arm the visual');
 });
 

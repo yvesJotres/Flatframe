@@ -11,6 +11,7 @@ import { getMission, waveSize } from './missions/missions.js';
 import { audioManager } from './core/audio.js';
 import { createMenuMusic } from './core/menu_music.js';
 import { rollLootDrop, applyLootPickup } from './entities/loot.js';
+import { UNITS_PER_METER } from './core/constants.js';
 
 window.onerror = function (msg, url, lineNo, columnNo, error) {
   console.error('[GLOBAL ERROR]:', { msg, url, lineNo, columnNo, error });
@@ -50,11 +51,79 @@ let player = null, enemies = [], loot = [], projectiles = [], objective = null;
 let screen = 'main-menu', mission = null, kills = 0, elapsed = 0, currentWave = 1;
 let waveEnemiesSpawned = 0, waveEnemiesTotal = 0, waveTimer = 0, spawnTimer = 0, lastTimestamp = 0, gameExited = false;
 
+// Camera
+let camera = { x: 0, y: 0, zoom: 1 };
+const cameraLerp = 0.1; // smooth follow
+
+function updateCamera(dt) {
+  if (!player) return;
+  // Target: center player on screen
+  const targetX = player.x - canvas.width / 2;
+  const targetY = player.y - canvas.height / 2;
+  camera.x += (targetX - camera.x) * cameraLerp;
+  camera.y += (targetY - camera.y) * cameraLerp;
+}
+
 function clampToArena(entity) {
   if (!entity) return;
   const margin = entity.radius ?? 16;
   entity.x = Math.max(margin, Math.min(canvas.width - margin, entity.x));
   entity.y = Math.max(margin, Math.min(canvas.height - margin, entity.y));
+}
+
+const GRID_SIZE = UNITS_PER_METER; // 15px = 1m
+
+function drawGrid() {
+  // Draw in SCREEN space (viewport-fixed) so grid doesn't lag with camera lerp
+  // Snap to integer screen pixels for crisp lines
+  const worldLeft = camera.x;
+  const worldTop = camera.y;
+
+  const firstX = Math.floor(worldLeft / GRID_SIZE) * GRID_SIZE;
+  const firstY = Math.floor(worldTop / GRID_SIZE) * GRID_SIZE;
+
+  // Convert to screen coordinates, then snap to pixel grid
+  let screenFirstX = Math.round((firstX - worldLeft) * camera.zoom);
+  let screenFirstY = Math.round((firstY - worldTop) * camera.zoom);
+  const step = Math.max(1, Math.round(GRID_SIZE * camera.zoom));
+
+  ctx.lineWidth = 1 / camera.zoom; // hairline
+  ctx.strokeStyle = '#1a1a20';
+
+  // Vertical lines
+  for (let sx = screenFirstX; sx <= canvas.width; sx += step) {
+    ctx.beginPath();
+    ctx.moveTo(sx + 0.5, 0); // +0.5 for crisp 1px lines
+    ctx.lineTo(sx + 0.5, canvas.height);
+    ctx.stroke();
+  }
+  // Horizontal lines
+  for (let sy = screenFirstY; sy <= canvas.height; sy += step) {
+    ctx.beginPath();
+    ctx.moveTo(0, sy + 0.5);
+    ctx.lineTo(canvas.width, sy + 0.5);
+    ctx.stroke();
+  }
+
+  // Major lines every 5m
+  const majorStep = step * 5;
+  const majorFirstX = ((screenFirstX % majorStep) + majorStep) % majorStep;
+  const majorFirstY = ((screenFirstY % majorStep) + majorStep) % majorStep;
+  ctx.strokeStyle = '#2a2a35';
+  ctx.lineWidth = 2 / camera.zoom;
+
+  for (let sx = majorFirstX; sx <= canvas.width; sx += majorStep) {
+    ctx.beginPath();
+    ctx.moveTo(Math.round(sx) + 0.5, 0);
+    ctx.lineTo(Math.round(sx) + 0.5, canvas.height);
+    ctx.stroke();
+  }
+  for (let sy = majorFirstY; sy <= canvas.height; sy += majorStep) {
+    ctx.beginPath();
+    ctx.moveTo(0, Math.round(sy) + 0.5);
+    ctx.lineTo(canvas.width, Math.round(sy) + 0.5);
+    ctx.stroke();
+  }
 }
 
 function spawnEnemy(lvl = 1) {
@@ -103,8 +172,9 @@ function updateSpawns(dt) {
 }
 
 function updateWorld(dt, { withMission = false } = {}) {
-  player.update(dt, inputHandler, projectiles, enemies);
+  player.update(dt, inputHandler, projectiles, enemies, camera);
   clampToArena(player);
+  updateCamera(dt);
 
   const targets = [];
   if (player.alive && !player.isBleedingOut) targets.push(player);
@@ -214,7 +284,6 @@ function updateHud(dt) {
 }
 
 function gameLoop(timestamp) {
-  try {
     if (gameExited) { drawExitScreen(); return; }
     if (!lastTimestamp) lastTimestamp = timestamp;
     const dt = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
@@ -233,6 +302,8 @@ function gameLoop(timestamp) {
           enemies = []; loot = []; projectiles = []; kills = 0;
           mission = null; objective = null;
           hud.reset(); hud.setVisible(true);
+        } else if (choice.action === 'world-builder') {
+          window.open('world_builder.html?dev=1', '_blank');
         }
       }
       mainMenu.draw(ctx, canvas);
@@ -246,9 +317,12 @@ function gameLoop(timestamp) {
         else { openMainMenu(); requestAnimationFrame(gameLoop); return; }
       }
       if (inputHandler.isKeyPressed('p')) simulacrumMenu.toggle();
-      simulacrumMenu.update(inputHandler, canvas, enemies);
-      updateWorld(dt);
-      if (missionFailed()) { screen = 'failed'; hud.setVisible(false); }
+      const menuActive = simulacrumMenu.update(inputHandler, canvas, enemies, player);
+      
+      if (!menuActive) {
+        updateWorld(dt);
+        if (missionFailed()) { screen = 'failed'; hud.setVisible(false); }
+      }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const enemy of enemies) enemy.draw(ctx);
       player.draw(ctx);
@@ -276,10 +350,10 @@ function gameLoop(timestamp) {
       else if (inputHandler.isKeyPressed('enter') || inputHandler.isMouseClicked()) {
         if (mission) startMission(mission.id);
         else openMainMenu();
-      }
-      requestAnimationFrame(gameLoop);
+            requestAnimationFrame(gameLoop);
       return;
     }
+  }
 
     if (inputHandler.isKeyPressed('escape')) pauseMenu.toggle();
     if (pauseMenu.visible) {
@@ -294,20 +368,24 @@ function gameLoop(timestamp) {
       else if (missionWon()) { screen = 'complete'; hud.setVisible(false); }
     }
 
+  
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Apply camera transform
+    ctx.save();
+    ctx.translate(-camera.x, -camera.y);
+    drawGrid();
+    
     if (objective) objective.draw(ctx);
     for (const enemy of enemies) enemy.draw(ctx);
     if (player.alive || player.isBleedingOut) player.draw(ctx);
     for (const p of projectiles) p.draw(ctx);
     for (const l of loot) l.draw(ctx);
+    
+    ctx.restore();
     updateHud(dt);
     pauseMenu.draw(ctx, canvas);
     simulacrumMenu.draw(ctx, canvas);
     requestAnimationFrame(gameLoop);
-  } catch (err) {
-    console.error('[GameLoop Error]', err);
-    requestAnimationFrame(gameLoop);
-  }
 }
 
 function drawOutcomeScreen() {
