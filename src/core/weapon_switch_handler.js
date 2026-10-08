@@ -25,7 +25,7 @@ export class WeaponSwitchHandler {
           audioManager.play(Math.random() < 0.5 ? 'melee_equip1' : 'melee_equip2', 0.6);
         } else {
           this.player.currentWeapon = this.player.lastRangedWeapon;
-          audioManager.play(Math.random() < 0.5 ? 'melee_equip1' : 'melee_equip2', 0.6);
+          audioManager.play(Math.random() < 0.5 ? 'ranged_equip1' : 'ranged_equip2', 0.6);
         }
         this.triggeredHold = true;
         this.hasHeld = true;
@@ -38,6 +38,7 @@ export class WeaponSwitchHandler {
           this.player.currentWeapon = (this.player.lastRangedWeapon === this.player.primaryWeapon) ? this.player.secondaryWeapon : this.player.primaryWeapon;
           this.player.lastRangedWeapon = this.player.currentWeapon;
         }
+        audioManager.play(Math.random() < 0.5 ? 'ranged_equip1' : 'ranged_equip2', 0.6);
       }
       this.fKeyHeld = false;
       this.hasHeld = false;

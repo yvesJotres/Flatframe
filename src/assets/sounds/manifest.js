@@ -1,4 +1,4 @@
-// Sound manifest � declare the game's sound files here.
+// Sound manifest — declare the game's sound files here.
 //
 // HOW TO ADD A SOUND:
 //   1. Drop the audio file (.ogg / .mp3 / .wav) into this folder
@@ -21,16 +21,21 @@ const sound = (file) => new URL(file, import.meta.url).href;
 
 export const SOUND_MANIFEST = {
   // --- active: files present in src/assets/sounds/ ---
-  melee_swing1:  { file: sound('swordSlash1.ogg'),       category: 'sfx', volume: 0.7, rate: [0.9, 1.1] },
-  melee_swing2:  { file: sound('swordSlash2.ogg'),       category: 'sfx', volume: 0.7, rate: [0.9, 1.1] },
-  melee_equip1:  { file: sound('swordEquip1.mp3'),       category: 'sfx', volume: 0.6 },
-  melee_equip2:  { file: sound('swordEquip2.mp3'),       category: 'sfx', volume: 0.6 },
-  heavy_attack:  { file: sound('swordHeavyAttack.mp3'),  category: 'sfx', volume: 0.8 },
-  launcher_music:{ file: sound('launcher_music.mp3'),    category: 'music', volume: 0.4 },
-  ui_hover:      { file: sound('ui_hover.ogg'),          category: 'ui', volume: 0.4 },
-  reload:        { file: sound('primary_reload.ogg'),    category: 'sfx', volume: 0.7 },
-  ammo_collect:  { file: sound('ammo_collect.ogg'),      category: 'sfx', volume: 0.7, rate: [0.95, 1.05] },
-  loot_pick:     { file: sound('loot_pick.ogg'),         category: 'sfx', volume: 0.7, rate: [0.95, 1.05] },
+  melee_swing1:   { file: sound('swordSlash1.ogg'),       category: 'sfx', volume: 0.7, rate: [0.9, 1.1] },
+  melee_swing2:   { file: sound('swordSlash2.ogg'),       category: 'sfx', volume: 0.7, rate: [0.9, 1.1] },
+  melee_equip1:   { file: sound('swordEquip1.ogg'),       category: 'sfx', volume: 0.6 },
+  melee_equip2:   { file: sound('swordEquip2.ogg'),       category: 'sfx', volume: 0.6 },
+  heavy_attack:   { file: sound('meleeHeavySwing.ogg'),   category: 'sfx', volume: 0.8 },
+  dagger_stab1:   { file: sound('daggerStab1.ogg'),       category: 'sfx', volume: 0.7, rate: [0.9, 1.1] },
+  dagger_stab2:   { file: sound('daggerStab2.ogg'),       category: 'sfx', volume: 0.7, rate: [0.9, 1.1] },
+  ranged_equip1:  { file: sound('rangedEquip1.ogg'),      category: 'sfx', volume: 0.6 },
+  ranged_equip2:  { file: sound('rangedEquip2.ogg'),      category: 'sfx', volume: 0.6 },
+  revive:         { file: sound('revive.ogg'),            category: 'sfx', volume: 0.8 },
+  launcher_music: { file: sound('launcher_music.mp3'),    category: 'music', volume: 0.4 },
+  ui_hover:       { file: sound('ui_hover.ogg'),          category: 'ui', volume: 0.4 },
+  reload:         { file: sound('primary_reload.ogg'),    category: 'sfx', volume: 0.7 },
+  ammo_collect:   { file: sound('ammo_collect.ogg'),      category: 'sfx', volume: 0.7, rate: [0.95, 1.05] },
+  loot_pick:      { file: sound('loot_pick.ogg'),         category: 'sfx', volume: 0.7, rate: [0.95, 1.05] },
 
 
   // --- weapons (add the .ogg files, then uncomment) ---

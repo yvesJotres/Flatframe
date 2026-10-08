@@ -1,10 +1,14 @@
 import Weapon from './weapon.js';
 import { SKANA } from './data/skana.js';
+import { HEAT_DAGGER } from './data/heat_dagger.js';
+import { SHEEV } from './data/sheev.js';
 import { audioManager } from '../core/audio.js';
 import { UNITS_PER_METER, DEFAULT_MELEE_COOLDOWN_MS, COMBO_RESET_MS, PARRY_WINDOW_SEC } from '../core/constants.js';
 
 export const MELEE_WEAPONS = {
   [SKANA.name]: SKANA,
+  [HEAT_DAGGER.name]: HEAT_DAGGER,
+  [SHEEV.name]: SHEEV,
 };
 
 export const DEFAULT_MELEE = SKANA.name;
@@ -81,7 +85,12 @@ export default class MeleeWeapon extends Weapon {
     
     this.lastMeleeTime = now;
     this.comboTimer = COMBO_RESET_MS;
-    const swingSound = Math.random() < 0.5 ? 'melee_swing1' : 'melee_swing2';
+    
+    // Sound: daggers use stab sounds, swords use swing sounds
+    const isDagger = this.stats.class === 'Dagger';
+    const swingSound = isDagger
+      ? (Math.random() < 0.5 ? 'dagger_stab1' : 'dagger_stab2')
+      : (Math.random() < 0.5 ? 'melee_swing1' : 'melee_swing2');
     audioManager.play(swingSound, 0.7);
 
     const reach = this.range * UNITS_PER_METER;

@@ -302,3 +302,53 @@ canvas {
   opacity: 1;
   transition: opacity 0.04s linear;
 }
+
+/* ----------------------------------------------------------- Revive Panel */
+
+#revive-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 100;
+}
+
+#revive-panel.hidden {
+  display: none;
+}
+
+#bleedout-timer {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #ff4444;
+  text-shadow: 0 4px 16px rgba(255, 68, 68, 0.6), 0 2px 8px rgba(0, 0, 0, 0.9);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+#revive-count {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 7rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 4px 20px rgba(255, 255, 255, 0.3), 0 2px 10px rgba(0, 0, 0, 0.9);
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+#revive-instruction {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.9;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+}
+
+/* Hidden utility */
+.hidden {
+  display: none !important;
+}

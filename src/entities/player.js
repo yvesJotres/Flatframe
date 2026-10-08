@@ -98,6 +98,7 @@ export default class Player {
       if (input.isKeyDown('x')) {
         this.reviveHoldTime += dt;
         if (this.reviveHoldTime >= 2.0 && this.revivesRemaining > 0) {
+          audioManager.play('revive', 0.8);
           this.revivesRemaining--;
           this.isBleedingOut = false;
           this.awaitingRevive = false;
@@ -296,10 +297,13 @@ export default class Player {
     }
 
     // Heavy attack (middle click while melee equipped)
-    if (heavyClick && isMeleeEquipped) {
+    // Lockout: check meleeSwingTimer to prevent light-attack-like spam
+    // Use weapon's windUp (default 0.8s) for the lockout duration
+    if (heavyClick && isMeleeEquipped && this.meleeSwingTimer <= 0) {
       const hits = this.meleeWeapon.heavyAttack(this, enemies);
       if (hits) {
-        this.meleeSwingTimer = 0.25;
+        const windUp = this.meleeWeapon.heavyAttackData?.windUp ?? 0.8;
+        this.meleeSwingTimer = windUp;
         this.meleeSwingHits = hits.map(e => ({ angle: Math.atan2(e.y - this.y, e.x - this.x), distance: Math.hypot(e.x - this.x, e.y - this.y) }));
         this.meleeSwingType = 'heavy';
       }

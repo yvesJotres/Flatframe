@@ -65,7 +65,13 @@ export default class Hud {
 
       // Dev read-out
       position: pick('pos-display'),
-      angle: pick('angle-display')
+      angle: pick('angle-display'),
+
+      // Revive
+      revivePanel: pick('revive-panel'),
+      bleedoutTimer: pick('bleedout-timer'),
+      reviveCount: pick('revive-count'),
+      reviveInstruction: pick('revive-instruction')
     };
 
     this.lastVitals = null;
@@ -98,6 +104,22 @@ export default class Hud {
 
   updateVitals(player, dt = 0) {
     if (player && player.isBleedingOut) {
+      // Show revive panel
+      toggle(this.el.revivePanel, 'hidden', false);
+      
+      // Update bleedout timer (MM:SS or DEAD)
+      const timerSec = Math.max(0, Math.floor(player.bleedoutTimer || 0));
+      if (timerSec > 0) {
+        const mm = Math.floor(timerSec / 60).toString().padStart(2, '0');
+        const ss = (timerSec % 60).toString().padStart(2, '0');
+        setText(this.el.bleedoutTimer, `BLEEDING OUT ${mm}:${ss}`);
+      } else {
+        setText(this.el.bleedoutTimer, 'DEAD');
+      }
+      
+      // Update revive counter
+      setText(this.el.reviveCount, String(player.revivesRemaining));
+      
       if (player.awaitingRevive) {
         this.updateObjective('DOWN', 'HOLD X TO SELF-REVIVE · Revives: ' + player.revivesRemaining, '#ff4444');
       } else {
@@ -105,6 +127,21 @@ export default class Hud {
         const hold = player.reviveHoldTime ? ' [Holding X: ' + player.reviveHoldTime.toFixed(1) + ']' : '';
         this.updateObjective('BLEEDOUT', 'BLEEDOUT: ' + timer + 's · Revives: ' + player.revivesRemaining + hold, '#ff4444');
       }
+      
+      // Hide vitals during bleedout
+      toggle(this.el.vitalValuesRow, 'hidden', true);
+      toggle(this.el.vitalBarsRow, 'hidden', true);
+      toggle(this.el.chips, 'hidden', true);
+      if (this.el.frameDisplay) toggle(this.el.frameDisplay, 'hidden', true);
+    } else {
+      // Hide revive panel when not bleeding out
+      toggle(this.el.revivePanel, 'hidden', true);
+      
+      // Show vitals when alive
+      toggle(this.el.vitalValuesRow, 'hidden', false);
+      toggle(this.el.vitalBarsRow, 'hidden', false);
+      toggle(this.el.chips, 'hidden', false);
+      if (this.el.frameDisplay) toggle(this.el.frameDisplay, 'hidden', false);
     }
     
     const healthPercent = player.maxHealth > 0 ? player.health / player.maxHealth : 0;
