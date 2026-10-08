@@ -12,28 +12,35 @@
     <canvas id="gameCanvas"></canvas>
 
     <div id="hud">
-      <!-- Top-left: vitals -->
-      <div id="vitals" class="hud-region top-left">
-        <div id="shield-bar" class="bar shield">
-          <div id="shield-fill" class="bar-fill"></div>
-          <span class="bar-label">SHIELD</span>
-          <span id="shield-display" class="bar-value">370 / 370</span>
+      <!-- Top-left: objective (mission) -->
+      <div id="objective-region" class="hud-region top-left">
+        <p id="mission-display">EXTERMINATE</p>
+        <p id="objective-display">Eliminated 0 / 24</p>
+      </div>
+
+      <!-- Top-right: vitals (Warframe style) -->
+      <div id="vitals-region" class="hud-region top-right">
+        <div id="vital-values-row" class="vital-values-row">
+          <span id="shield-display" class="vital-value shield">100</span>
+          <span id="health-display" class="vital-value health">100</span>
         </div>
-        <div id="health-bar" class="bar health">
-          <div id="health-fill" class="bar-fill"></div>
-          <span class="bar-label">HEALTH</span>
-          <span id="health-display" class="bar-value">370 / 370</span>
+        <div id="vital-bars-row" class="vital-bars-row">
+          <div id="shield-track" class="vital-track shield">
+            <div id="shield-fill" class="vital-fill"></div>
+          </div>
+          <div id="health-track" class="vital-track health">
+            <div id="health-fill" class="vital-fill"></div>
+          </div>
         </div>
+        <div id="frame-display" class="vital-frame">EXCALIBUR [30]</div>
         <div class="chips">
           <span id="armor-display" class="chip">ARMOR 240</span>
           <span id="energy-display" class="chip">ENERGY 150</span>
         </div>
       </div>
 
-      <!-- Top-centre: mission banner -->
+      <!-- Top-centre: mission banner (progress bar) -->
       <div class="hud-region top-center">
-        <p id="mission-display">EXTERMINATE</p>
-        <p id="objective-display">Eliminated 0 / 24</p>
         <div id="objective-bar" class="objective-bar">
           <div id="objective-fill" class="objective-fill"></div>
         </div>
@@ -41,23 +48,22 @@
       </div>
 
       <!-- Bottom-right: weapon and ammo -->
-      <div id="ammo-panel" class="hud-region bottom-right">
-        <p id="weapon-display">Braton</p>
-        <p id="weapon-stats">24.0 dmg · 8.75 r/s · 45 mag</p>
-        <div class="ammo-counts">
-          <span id="ammo-display">45</span>
-          <span id="reserve-display">/ 540</span>
-        </div>
-        <div id="mag-bar" class="mag-bar">
-          <div id="mag-fill" class="mag-fill"></div>
-        </div>
-        <p id="reload-display"></p>
-      </div>
+            <div id="ammo-panel" class="hud-region bottom-right">
+              <div class="ammo-counts">
+                <span id="ammo-display">45</span>
+                <span id="reserve-display">/ 540</span>
+              </div>
+              <div id="weapon-display" class="ammo-weapon">BRATON [30]</div>
+            </div>
 
       <!-- Bottom-left: dev read-out -->
       <div class="hud-region bottom-left">
         <p id="pos-display">POS 0, 0</p>
         <p id="angle-display">ANGLE 0°</p>
+        <div class="scale-indicator">
+          <span class="scale-line"></span>
+          <span class="scale-label">1m</span>
+        </div>
       </div>
     </div>
 

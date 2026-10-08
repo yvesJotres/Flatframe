@@ -49,7 +49,8 @@ canvas {
   inset: 0;
   pointer-events: none;
   font-size: 14px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
+  font-family: 'Rajdhani', sans-serif;
   transition: opacity 0.25s ease;
 }
 
@@ -65,6 +66,14 @@ canvas {
   top: 18px;
   left: 18px;
   width: 296px;
+  text-align: left;
+}
+
+.top-right {
+  top: 18px;
+  right: 18px;
+  text-align: right;
+  width: 400px;
 }
 
 .top-center {
@@ -90,81 +99,66 @@ canvas {
   font-variant-numeric: tabular-nums;
 }
 
-/* ------------------------------------------------------------------ Vitals */
+/* ------------------------------------------------------------------ Vitals (Warframe style) */
 
-.bar {
+.vital-values-row {
+  display: flex;
+  gap: 0;
+  width: 400px;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.vital-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+}
+
+.vital-value.shield { color: #0ED4FA; }
+.vital-value.health { color: #CB3332; }
+
+.vital-bars-row {
+  display: flex;
+  gap: 0;
+  width: 400px;
+  height: 12px;
+}
+
+.vital-track {
   position: relative;
-  height: 22px;
-  margin-bottom: 7px;
-  border: 1px solid var(--stroke);
-  border-radius: 7px;
-  background: rgba(0, 0, 0, 0.5);
+  height: 100%;
   overflow: hidden;
+  background: rgba(0, 0, 0, 0.5); /* missing bar = black @ 50% */
 }
 
-.bar-fill {
+.vital-fill {
   position: absolute;
   top: 0;
-  left: 0;
+  right: 0;
   bottom: 0;
-  width: 100%;
-  transition: width 0.18s ease-out;
+  width: 100%; /* px width set by hud.js */
+  transition: width 0.15s ease-out;
 }
 
-.bar.shield .bar-fill {
-  background: linear-gradient(90deg, #1b7fa8, var(--shield));
-}
+.vital-track.shield .vital-fill { background: #0ED4FA; }
+.vital-track.health .vital-fill { background: #CB3332; }
 
-.bar.health .bar-fill {
-  background: linear-gradient(90deg, #a11d27, var(--health));
-}
-
-.bar-label,
-.bar-value {
-  position: absolute;
-  top: 0;
-  line-height: 20px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
-}
-
-.bar-label {
-  left: 9px;
-  font-size: 10px;
-  letter-spacing: 2px;
-  opacity: 0.9;
-}
-
-.bar-value {
-  right: 9px;
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Shields are recharging — a soft glow tells the player why the bar is moving. */
-.bar.recharging {
-  border-color: rgba(127, 227, 255, 0.65);
-  box-shadow: 0 0 12px rgba(79, 195, 247, 0.35);
-}
-
-#vitals.critical .bar.health {
-  border-color: rgba(255, 91, 91, 0.85);
-  animation: critical-pulse 0.9s ease-in-out infinite;
-}
-
-@keyframes critical-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 rgba(255, 60, 60, 0);
-  }
-  50% {
-    box-shadow: 0 0 18px rgba(255, 60, 60, 0.75);
-  }
+.vital-frame {
+  font-size: 1.125rem;
+  opacity: 0.8;
+  margin-top: 0.5rem;
+  text-align: right;
+  color: var(--text-dim);
 }
 
 .chips {
   display: flex;
   gap: 7px;
+  margin-top: 8px;
+  justify-content: flex-end;
 }
 
 .chip {
@@ -235,72 +229,62 @@ canvas {
 
 #ammo-panel {
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
-}
-
-#weapon-display {
-  font-size: 15px;
-  letter-spacing: 3px;
-  font-weight: 600;
-}
-
-#weapon-stats {
-  color: var(--text-dim);
-  font-size: 11px;
-  letter-spacing: 0.4px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
 }
 
 .ammo-counts {
   display: flex;
   align-items: baseline;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 2px;
+  gap: 0;
 }
 
 #ammo-display {
-  font-size: 44px;
+  font-size: 4.5rem;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  transition: color 0.2s ease;
 }
 
 #reserve-display {
   color: var(--text-dim);
-  font-size: 17px;
+  font-size: 1.5rem;
   font-variant-numeric: tabular-nums;
+  margin-left: 0.25rem;
 }
 
-#ammo-panel.low-ammo #ammo-display {
-  color: #ffb84d;
-}
-
-.mag-bar {
-  height: 6px;
-  width: 190px;
-  margin: 7px 0 0 auto;
-  border-radius: 3px;
-  background: rgba(0, 0, 0, 0.55);
-  overflow: hidden;
-}
-
-.mag-fill {
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(90deg, #ffb84d, #ffe08a);
-  transition: width 0.08s linear;
-}
-
-#mag-bar.reloading .mag-fill {
-  background: linear-gradient(90deg, #1b7fa8, var(--shield));
-}
-
-#reload-display {
-  min-height: 15px;
-  margin-top: 4px;
-  color: var(--accent);
-  font-size: 10px;
+.ammo-weapon {
+  font-size: 1.125rem;
+  opacity: 0.8;
   letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* -------------------------------------------------------- Scale indicator */
+
+.scale-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--text-dim);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.scale-line {
+  display: inline-block;
+  width: 15px; /* 1m = UNITS_PER_METER (15px) */
+  height: 2px;
+  background: var(--text-dim);
+  opacity: 0.6;
+}
+
+.scale-label {
+  opacity: 0.5;
+  font-size: 9px;
 }
 
 /* ------------------------------------------------------ Incoming-fire pinch */

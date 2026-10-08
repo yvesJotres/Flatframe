@@ -4,6 +4,8 @@
 // state classes (damage pinch, low health, reloading) so game.js stays about the
 // game rather than about styling.
 
+const VITAL_BAR_TOTAL_WIDTH = 400; // px
+
 function percentOf(value) {
   const clamped = Math.max(0, Math.min(1, value));
   return `${(clamped * 100).toFixed(2)}%`;
@@ -17,6 +19,10 @@ function setWidth(element, value) {
   if (element) element.style.width = percentOf(value);
 }
 
+function setWidthPx(element, px) {
+  if (element) element.style.width = `${Math.round(px)}px`;
+}
+
 function toggle(element, className, on) {
   if (element) element.classList.toggle(className, !!on);
 }
@@ -27,20 +33,20 @@ export default class Hud {
 
     this.el = {
       root: pick('hud'),
-      vitals: pick('vitals'),
       flash: pick('damage-flash'),
 
-      // Vitals
-      healthBar: pick('health-bar'),
-      healthFill: pick('health-fill'),
-      healthValue: pick('health-display'),
-      shieldBar: pick('shield-bar'),
-      shieldFill: pick('shield-fill'),
+      // Vitals (new Warframe-style layout)
       shieldValue: pick('shield-display'),
+      healthValue: pick('health-display'),
+      shieldTrack: pick('shield-track'),
+      healthTrack: pick('health-track'),
+      shieldFill: pick('shield-fill'),
+      healthFill: pick('health-fill'),
+      frameDisplay: pick('frame-display'),
       armor: pick('armor-display'),
       energy: pick('energy-display'),
 
-      // Mission banner
+      // Mission banner (top-left)
       missionName: pick('mission-display'),
       objective: pick('objective-display'),
       objectiveBar: pick('objective-bar'),
@@ -64,6 +70,7 @@ export default class Hud {
 
     this.lastVitals = null;
     this.flashTimer = 0;
+    this.vitalsInitialized = false;
   }
 
   setVisible(visible) {
@@ -86,9 +93,7 @@ export default class Hud {
     this.lastVitals = null;
     this.flashTimer = 0;
     toggle(this.el.flash, 'hit', false);
-    toggle(this.el.vitals, 'critical', false);
     toggle(this.el.ammoPanel, 'low-ammo', false);
-    toggle(this.el.shieldBar, 'recharging', false);
   }
 
   updateVitals(player, dt = 0) {
@@ -105,10 +110,27 @@ export default class Hud {
     const healthPercent = player.maxHealth > 0 ? player.health / player.maxHealth : 0;
     const shieldPercent = player.maxShield > 0 ? player.shield / player.maxShield : 0;
 
-    setWidth(this.el.healthFill, healthPercent);
-    setWidth(this.el.shieldFill, shieldPercent);
-    setText(this.el.healthValue, `${Math.ceil(player.health)} / ${player.maxHealth}`);
-    setText(this.el.shieldValue, `${Math.ceil(player.shield)} / ${player.maxShield}`);
+    // First frame: set track widths proportionally to max values (total = 400px)
+    if (!this.vitalsInitialized && player.maxHealth > 0 && player.maxShield > 0) {
+      const totalMax = player.maxHealth + player.maxShield;
+      const healthTrackWidth = (player.maxHealth / totalMax) * VITAL_BAR_TOTAL_WIDTH;
+      const shieldTrackWidth = (player.maxShield / totalMax) * VITAL_BAR_TOTAL_WIDTH;
+      
+      setWidthPx(this.el.healthTrack, healthTrackWidth);
+      setWidthPx(this.el.shieldTrack, shieldTrackWidth);
+      this.vitalsInitialized = true;
+    }
+
+    // Deplete fills from right to left (width = current percent * track width)
+    const shieldTrackWidth = this.el.shieldTrack ? parseFloat(this.el.shieldTrack.style.width) || 0 : 0;
+    const healthTrackWidth = this.el.healthTrack ? parseFloat(this.el.healthTrack.style.width) || 0 : 0;
+    
+    setWidthPx(this.el.shieldFill, shieldPercent * shieldTrackWidth);
+    setWidthPx(this.el.healthFill, healthPercent * healthTrackWidth);
+
+    // Values: just the current number (no "/ max")
+    setText(this.el.shieldValue, `${Math.ceil(player.shield)}`);
+    setText(this.el.healthValue, `${Math.ceil(player.health)}`);
     setText(this.el.armor, `ARMOR ${player.armor}`);
     setText(this.el.energy, `ENERGY ${Math.ceil(player.energy)}`);
 
@@ -121,12 +143,6 @@ export default class Hud {
 
     this.flashTimer = Math.max(0, this.flashTimer - dt);
     toggle(this.el.flash, 'hit', this.flashTimer > 0);
-    toggle(this.el.vitals, 'critical', player.alive && healthPercent <= 0.25);
-    toggle(
-      this.el.shieldBar,
-      'recharging',
-      player.alive && player.shield < player.maxShield && player.timeSinceDamage >= player.shieldRegenDelay
-    );
   }
 
   updateWeapon(player) {
@@ -142,40 +158,12 @@ export default class Hud {
       );
       setText(this.el.ammoValue, '');
       setText(this.el.reserveValue, '');
-      toggle(this.el.ammoPanel, 'low-ammo', false);
-      toggle(this.el.magBar, 'reloading', false);
-      setWidth(this.el.magFill, 0);
-      setText(this.el.reload, '');
       return;
     }
 
-    setText(this.el.weaponName, weapon.name);
-    setText(
-      this.el.weaponStats,
-      `${weapon.totalDamage.toFixed(1)} dmg · ${weapon.fireRate} r/s · ${weapon.magazine} mag`
-    );
-
+    setText(this.el.weaponName, `${weapon.name} [${weapon.rank || 0}]`);
     setText(this.el.ammoValue, weapon.ammo);
     setText(this.el.reserveValue, `/ ${weapon.ammoReserve}`);
-    toggle(
-      this.el.ammoPanel,
-      'low-ammo',
-      !weapon.reloading && weapon.ammo <= Math.max(1, weapon.magazine * 0.25)
-    );
-
-    if (weapon.reloading) {
-      const progress = weapon.reloadSpeed > 0
-        ? 1 - weapon.reloadRemaining / weapon.reloadSpeed
-        : 1;
-      setWidth(this.el.magFill, progress);
-      toggle(this.el.magBar, 'reloading', true);
-      setText(this.el.reload, `RELOADING ${Math.max(0, weapon.reloadRemaining).toFixed(1)}s`);
-      return;
-    }
-
-    setWidth(this.el.magFill, weapon.magazine > 0 ? weapon.ammo / weapon.magazine : 0);
-    toggle(this.el.magBar, 'reloading', false);
-    setText(this.el.reload, weapon.ammo === 0 ? 'PRESS R TO RELOAD' : '');
   }
 
   // `progress` of null hides the fill and dims the bar (used by Survival, which
