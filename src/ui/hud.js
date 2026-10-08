@@ -4,7 +4,7 @@
 // state classes (damage pinch, low health, reloading) so game.js stays about the
 // game rather than about styling.
 
-const VITAL_BAR_TOTAL_WIDTH = 400; // px
+const VITAL_BAR_TOTAL_WIDTH = 200; // px
 
 function percentOf(value) {
   const clamped = Math.max(0, Math.min(1, value));
@@ -103,84 +103,80 @@ export default class Hud {
   }
 
   updateVitals(player, dt = 0) {
-    if (player && player.isBleedingOut) {
-      // Show revive panel
-      toggle(this.el.revivePanel, 'hidden', false);
+      if (player && player.isBleedingOut) {
+        // Show revive panel (middle screen)
+        toggle(this.el.revivePanel, 'hidden', false);
+
+        // Update middle screen revive counter
+                setText(this.el.reviveCount, String(player.revivesRemaining));
+                toggle(this.el.bleedoutTimer, 'hidden', true); // Hide old bleedout timer
+
+        // REPLACE health/shield values with bleedout text (same font/size/color as health)
+        const timer = Math.max(0, Math.floor(player.bleedoutTimer || 0));
+        if (timer <= 0) {
+          setText(this.el.healthValue, 'DEAD');
+        } else {
+          const mm = Math.floor(timer / 60).toString().padStart(2, '0');
+          const ss = (timer % 60).toString().padStart(2, '0');
+          setText(this.el.healthValue, `BLEEDING OUT ${mm}:${ss}`);
+        }
+        // Hide shield value during bleedout
+        setText(this.el.shieldValue, '');
       
-      // Update bleedout timer (MM:SS or DEAD)
-      const timerSec = Math.max(0, Math.floor(player.bleedoutTimer || 0));
-      if (timerSec > 0) {
-        const mm = Math.floor(timerSec / 60).toString().padStart(2, '0');
-        const ss = (timerSec % 60).toString().padStart(2, '0');
-        setText(this.el.bleedoutTimer, `BLEEDING OUT ${mm}:${ss}`);
-      } else {
-        setText(this.el.bleedoutTimer, 'DEAD');
-      }
+        // Empty vital bars
+        setWidthPx(this.el.shieldFill, 0);
+        setWidthPx(this.el.healthFill, 0);
       
-      // Update revive counter
-      setText(this.el.reviveCount, String(player.revivesRemaining));
-      
-      if (player.awaitingRevive) {
-        this.updateObjective('DOWN', 'HOLD X TO SELF-REVIVE · Revives: ' + player.revivesRemaining, '#ff4444');
-      } else {
+        if (player.awaitingRevive) {
+          this.updateObjective('DOWN', 'HOLD X TO SELF-REVIVE · Revives: ' + player.revivesRemaining, '#ff4444');
+        } else {
         const timer = player.bleedoutTimer ? player.bleedoutTimer.toFixed(1) : '0.0';
         const hold = player.reviveHoldTime ? ' [Holding X: ' + player.reviveHoldTime.toFixed(1) + ']' : '';
         this.updateObjective('BLEEDOUT', 'BLEEDOUT: ' + timer + 's · Revives: ' + player.revivesRemaining + hold, '#ff4444');
+        }
+      } else {
+        // Hide revive panel when not bleeding out
+        toggle(this.el.revivePanel, 'hidden', true);
+
+        // Normal vital display
+        const healthPercent = player.maxHealth > 0 ? player.health / player.maxHealth : 0;
+        const shieldPercent = player.maxShield > 0 ? player.shield / player.maxShield : 0;
+
+        // First frame: set track widths proportionally to max values (total = 400px)
+        if (!this.vitalsInitialized && player.maxHealth > 0 && player.maxShield > 0) {
+          const totalMax = player.maxHealth + player.maxShield;
+          const healthTrackWidth = (player.maxHealth / totalMax) * VITAL_BAR_TOTAL_WIDTH;
+          const shieldTrackWidth = (player.maxShield / totalMax) * VITAL_BAR_TOTAL_WIDTH;
+
+          setWidthPx(this.el.healthTrack, healthTrackWidth);
+          setWidthPx(this.el.shieldTrack, shieldTrackWidth);
+          this.vitalsInitialized = true;
+        }
+
+        // Deplete fills from right to left (width = current percent * track width)
+        const shieldTrackWidth = this.el.shieldTrack ? parseFloat(this.el.shieldTrack.style.width) || 0 : 0;
+        const healthTrackWidth = this.el.healthTrack ? parseFloat(this.el.healthTrack.style.width) || 0 : 0;
+
+        setWidthPx(this.el.shieldFill, shieldPercent * shieldTrackWidth);
+        setWidthPx(this.el.healthFill, healthPercent * healthTrackWidth);
+
+        // Values: just the current number (no "/ max")
+        setText(this.el.shieldValue, `${Math.ceil(player.shield)}`);
+        setText(this.el.healthValue, `${Math.ceil(player.health)}`);
+        setText(this.el.armor, `ARMOR ${player.armor}`);
+        setText(this.el.energy, `ENERGY ${Math.ceil(player.energy)}`);
       }
-      
-      // Hide vitals during bleedout
-      toggle(this.el.vitalValuesRow, 'hidden', true);
-      toggle(this.el.vitalBarsRow, 'hidden', true);
-      toggle(this.el.chips, 'hidden', true);
-      if (this.el.frameDisplay) toggle(this.el.frameDisplay, 'hidden', true);
-    } else {
-      // Hide revive panel when not bleeding out
-      toggle(this.el.revivePanel, 'hidden', true);
-      
-      // Show vitals when alive
-      toggle(this.el.vitalValuesRow, 'hidden', false);
-      toggle(this.el.vitalBarsRow, 'hidden', false);
-      toggle(this.el.chips, 'hidden', false);
-      if (this.el.frameDisplay) toggle(this.el.frameDisplay, 'hidden', false);
+
+      // Damage pinch — a red vignette for a moment whenever health OR shield drops.
+      const total = player.health + player.shield;
+      if (this.lastVitals !== null && total < this.lastVitals - 0.01) {
+        this.flashTimer = 0.22;
+      }
+      this.lastVitals = total;
+
+      this.flashTimer = Math.max(0, this.flashTimer - dt);
+      toggle(this.el.flash, 'hit', this.flashTimer > 0);
     }
-    
-    const healthPercent = player.maxHealth > 0 ? player.health / player.maxHealth : 0;
-    const shieldPercent = player.maxShield > 0 ? player.shield / player.maxShield : 0;
-
-    // First frame: set track widths proportionally to max values (total = 400px)
-    if (!this.vitalsInitialized && player.maxHealth > 0 && player.maxShield > 0) {
-      const totalMax = player.maxHealth + player.maxShield;
-      const healthTrackWidth = (player.maxHealth / totalMax) * VITAL_BAR_TOTAL_WIDTH;
-      const shieldTrackWidth = (player.maxShield / totalMax) * VITAL_BAR_TOTAL_WIDTH;
-      
-      setWidthPx(this.el.healthTrack, healthTrackWidth);
-      setWidthPx(this.el.shieldTrack, shieldTrackWidth);
-      this.vitalsInitialized = true;
-    }
-
-    // Deplete fills from right to left (width = current percent * track width)
-    const shieldTrackWidth = this.el.shieldTrack ? parseFloat(this.el.shieldTrack.style.width) || 0 : 0;
-    const healthTrackWidth = this.el.healthTrack ? parseFloat(this.el.healthTrack.style.width) || 0 : 0;
-    
-    setWidthPx(this.el.shieldFill, shieldPercent * shieldTrackWidth);
-    setWidthPx(this.el.healthFill, healthPercent * healthTrackWidth);
-
-    // Values: just the current number (no "/ max")
-    setText(this.el.shieldValue, `${Math.ceil(player.shield)}`);
-    setText(this.el.healthValue, `${Math.ceil(player.health)}`);
-    setText(this.el.armor, `ARMOR ${player.armor}`);
-    setText(this.el.energy, `ENERGY ${Math.ceil(player.energy)}`);
-
-    // Damage pinch — a red vignette for a moment whenever health OR shield drops.
-    const total = player.health + player.shield;
-    if (this.lastVitals !== null && total < this.lastVitals - 0.01) {
-      this.flashTimer = 0.22;
-    }
-    this.lastVitals = total;
-
-    this.flashTimer = Math.max(0, this.flashTimer - dt);
-    toggle(this.el.flash, 'hit', this.flashTimer > 0);
-  }
 
   updateWeapon(player) {
     const weapon = player.currentWeapon;
