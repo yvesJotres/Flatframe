@@ -6,10 +6,15 @@ A 2D top-down Warframe-inspired canvas shooter built with vanilla JavaScript (ES
 
 - **Warframe-style combat**: Primary, secondary, and melee weapons with combos, heavy attacks, and parrying
 - **Parkour movement**: Bullet jump, sprint, roll dodge
-- **Shield gating**: Warframe-style invulnerability on shield break
+- **Advanced Mechanics**:
+    - **Shield Gating**: Wiki-accurate invulnerability thresholds and timing
+    - **Damage Reduction**: Tenno/Enemy formulas for armor mitigation
+    - **Per-Faction Scaling**: Faction-based stat growth for health and armor
+    - **Status Effects**: Magnetic, Toxin, and Slash interactions
+    - **Visual Feedback**: Armored (yellow health) and Invulnerable (grey vitals) HUD states
 - **Mission system**: Exterminate, Defense, Survival, Simulacrum modes
-- **Enemy AI**: Factions (Grineer, Corpus, Infested) with alert states and target acquisition
-- **Loot & progression**: Mod drops, weapon switching, combo counters
+- **Enemy AI**: Factions (Grineer, Corpus, Infested) with alert states, target acquisition, and cover mechanics
+- **Loot & progression**: Mod drops, weapon switching, combo counters, health orb system
 
 ## Quick Start
 
