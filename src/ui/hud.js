@@ -139,19 +139,32 @@ export default class Hud {
         toggle(this.el.revivePanel, 'hidden', true);
 
         // Normal vital display
-        const healthPercent = player.maxHealth > 0 ? player.health / player.maxHealth : 0;
-        const shieldPercent = player.maxShield > 0 ? player.shield / player.maxShield : 0;
+                const healthPercent = player.maxHealth > 0 ? player.health / player.maxHealth : 0;
+                const shieldPercent = player.maxShield > 0 ? player.shield / player.maxShield : 0;
+        
+                // Check for shield gate invulnerability
+                const isInvulnerable = player.healthComponent && player.healthComponent.isInvulnerable;
 
-        // First frame: set track widths proportionally to max values (total = 400px)
-        if (!this.vitalsInitialized && player.maxHealth > 0 && player.maxShield > 0) {
-          const totalMax = player.maxHealth + player.maxShield;
-          const healthTrackWidth = (player.maxHealth / totalMax) * VITAL_BAR_TOTAL_WIDTH;
-          const shieldTrackWidth = (player.maxShield / totalMax) * VITAL_BAR_TOTAL_WIDTH;
+                // First frame: set track widths proportionally to max values (total = 400px)
+                if (!this.vitalsInitialized && player.maxHealth > 0 && player.maxShield > 0) {
+                  const totalMax = player.maxHealth + player.maxShield;
+                  const healthTrackWidth = (player.maxHealth / totalMax) * VITAL_BAR_TOTAL_WIDTH;
+                  const shieldTrackWidth = (player.maxShield / totalMax) * VITAL_BAR_TOTAL_WIDTH;
 
-          setWidthPx(this.el.healthTrack, healthTrackWidth);
-          setWidthPx(this.el.shieldTrack, shieldTrackWidth);
-          this.vitalsInitialized = true;
-        }
+                  setWidthPx(this.el.healthTrack, healthTrackWidth);
+                  setWidthPx(this.el.shieldTrack, shieldTrackWidth);
+                  this.vitalsInitialized = true;
+                }
+
+                // Apply invulnerable state styling
+                toggle(this.el.shieldTrack, 'invulnerable', isInvulnerable);
+                toggle(this.el.healthTrack, 'invulnerable', isInvulnerable);
+                toggle(this.el.shieldValue, 'invulnerable', isInvulnerable);
+                toggle(this.el.healthValue, 'invulnerable', isInvulnerable);
+
+                // Apply armored state styling (enemies only — player bar stays red)
+                const hasArmor = player.healthComponent && player.healthComponent.hasArmor && !player.healthComponent.isPlayer;
+                toggle(this.el.healthTrack, 'armored', hasArmor);
 
         // Deplete fills from right to left (width = current percent * track width)
         const shieldTrackWidth = this.el.shieldTrack ? parseFloat(this.el.shieldTrack.style.width) || 0 : 0;

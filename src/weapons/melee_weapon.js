@@ -120,9 +120,13 @@ export default class MeleeWeapon extends Weapon {
       }
 
       // Apply damage
-      const hit = this.rollHit();
-      hit.total *= comboMult;
-      enemy.takeDamage(hit, player.x, player.y);
+            const hit = this.rollHit();
+            hit.total *= comboMult;
+            // Melee: check if aiming at weakspot (head) based on angle to target
+            const toTargetAngle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+            const angleDiff = Math.abs(Math.atan2(Math.sin(toTargetAngle - player.angle), Math.cos(toTargetAngle - player.angle)));
+            const isWeakspot = angleDiff < 0.15 && enemy.weakspotRadius; // small angle tolerance
+            enemy.takeDamage(hit, player.x, player.y, isWeakspot);
       struck.push(enemy);
     }
 

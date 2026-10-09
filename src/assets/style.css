@@ -148,6 +148,13 @@ canvas {
 
 .vital-track.shield .vital-fill { background: #0ED4FA; }
 .vital-track.health .vital-fill { background: #CC2A28; }
+.vital-track.health.armored .vital-fill { background: #e0a635; }
+
+/* Invulnerable state (shield gating) - grey out vitals */
+.vital-track.invulnerable.shield .vital-fill,
+.vital-track.invulnerable.health .vital-fill { background: #585858; }
+.vital-track.invulnerable .vital-value { color: #585858; }
+.vital-value.invulnerable { color: #585858; }
 
 .vital-frame {
   font-size: 1.125rem;

@@ -36,12 +36,11 @@ export default class BaseEnemy {
     this.lvl = Math.max(1, options.lvl ?? 1);
     this.faction = options.faction ?? 'unknown';
 
-    this.health = new HealthComponent({
-      maxHp: options.maxHp ?? 100,
-      armor: options.armor ?? 0,
-    }, false);
+    // Subclasses must initialize health via initHealth()
+    this.health = null;
     this.status = new StatusManager();
     this.radius = options.radius ?? 16;
+    this.weakspotRadius = this.radius * 0.4; // headshot zone, bypasses enemy shield gate
 
     this.velocity = { x: 0, y: 0 };
     this.moveSpeed = options.moveSpeed ?? 150;
@@ -75,15 +74,31 @@ export default class BaseEnemy {
     this.alertTimer = 0; // seconds enemy stays alerted after taking damage
     this.lastDamageAngle = 0; // direction from which damage came
 
+    // Spawn penalty (per wiki: 4-8 seconds after spawn, no stealth kill)
+    this.spawnPenaltyTimer = 0;
+    this.isNewlySpawned = false;
+
+    // Enemy shield recharge delay (wiki: max 3s depending on depleted amount)
+    this.shieldRegenDelay = 0;
+    this.timeSinceShieldDamage = 0;
   }
-  
+
+  /** Initialize health component with stats. Call from subclass constructor. */
+  initHealth(stats = {}) {
+    this.health = new HealthComponent({
+      maxHp: stats.maxHp ?? 100,
+      maxShield: stats.maxShield ?? 0,
+      armor: stats.armor ?? 0,
+    }, false);
+  }
+
   // Backward compatibility getters
   get hp() { return this.health.hp; }
   set hp(val) { this.health.hp = val; }
   get maxHp() { return this.health.maxHp; }
   set maxHp(val) { this.health.maxHp = val; }
-  get armor() { return this.health.armor; }
-  set armor(val) { this.health.armor = val; }
+  get armor() { return this.health.currentArmor; }
+  set armor(val) { this.health.baseArmor = val; this.health.currentArmor = val; }
   /**
    * Hands a weapon to the unit. Enemy ammo never runs out, so the reserve is
    * infinite — otherwise a unit would go silent after one magazine.
@@ -95,12 +110,18 @@ export default class BaseEnemy {
   }
 
 
-  takeDamage(damage, sourceX = null, sourceY = null) {
-    const hit = typeof damage === 'number'
-      ? { total: damage, slash: 0, status: null }
-      : damage;
+  takeDamage(damage, sourceX = null, sourceY = null, isWeakspot = false) {
+        const hit = typeof damage === 'number'
+          ? { total: damage, slash: 0, status: null }
+          : damage;
 
-    const damageTaken = this.health.takeDamage(hit, 0);
+        const oldShield = this.health.shield;
+        const damageTaken = this.health.takeDamage(hit, 0, isWeakspot);
+
+        // Shield was hit → reset recharge delay
+        if (this.health.shield < oldShield) {
+          this.timeSinceShieldDamage = 0;
+        }
 
     // Alert the enemy if they took damage and don't have a target
     if (!this.focus && damageTaken > 0) {
@@ -119,86 +140,136 @@ export default class BaseEnemy {
   }
 
   update(dt, target = null, projectiles = [], enemies = []) {
-    if (this.health.isDead) return;
+        if (this.health.isDead) return;
 
-    // Status effects processing (includes bleed)
-    this.status.update(dt, this.health);
+        // Status effects processing (includes bleed)
+        this.status.update(dt, this.health);
 
-    if (this.health.isDead) return;
+        if (this.health.isDead) return;
 
-    // Target resolution
-    const candidates = Array.isArray(target) ? target : [target];
-    const aliveCandidates = candidates.filter(isTargetAlive);
+        // Spawn penalty countdown
+                if (this.spawnPenaltyTimer > 0) {
+                  this.spawnPenaltyTimer -= dt;
+                  if (this.spawnPenaltyTimer <= 0) {
+                    this.isNewlySpawned = false;
+                  }
+                }
 
-    // If alerted and no focus, try to acquire player in alert range
-    if (!this.focus && this.alertTimer > 0) {
-      const playerCandidate = aliveCandidates.find(c => c === target || c.isPlayer);
-      if (playerCandidate) {
-        const dx = playerCandidate.x - this.x;
-        const dy = playerCandidate.y - this.y;
-        const dist = Math.hypot(dx, dy);
-        const alertRangeMeters = 50; // 50m alert acquisition range
-        if (dist < alertRangeMeters * UNITS_PER_METER) {
-          this.focus = playerCandidate;
-        }
-      }
-    }
+                // Enemy shield recharge (wiki: max 3s delay depending on depletion)
+                if (this.health.maxShield > 0) {
+                  const oldShield = this.health.shield;
+                  // Track if shield was damaged this frame
+                  this.timeSinceShieldDamage += dt;
+                  // Delay scales with depletion: 1-3s
+                  this.shieldRegenDelay = Math.max(1, 3 * (1 - this.health.shield / this.health.maxShield));
+                  if (this.timeSinceShieldDamage >= this.shieldRegenDelay && this.health.shield < this.health.maxShield) {
+                    const regenAmount = this.health.maxShield * 0.1 * dt; // 10% max shield per second
+                    this.health.shield = Math.min(this.health.maxShield, this.health.shield + regenAmount);
+                  }
+                }
 
-    if (aliveCandidates.length === 0) {
-      // No eligible target
-      this.alertTimer = Math.max(0, this.alertTimer - dt);
+                // AI State Machine (per Warframe wiki)
+      // UNALERTED: patrolling, unaware of player
+      // CAUTIOUS: heard something, searching, gun raised
+      // ALERTED: visual contact, combat engaged
+      this.aiState = 'UNALERTED';
+
+      // Target resolution
+            const candidates = Array.isArray(target) ? target : [target];
+            const aliveCandidates = candidates.filter(isTargetAlive);
+
+            // If alerted and no focus, try to acquire player in alert range
+            if (!this.focus && this.alertTimer > 0) {
+              const playerCandidate = aliveCandidates.find(c => c === target || c.isPlayer);
+              if (playerCandidate) {
+                const dx = playerCandidate.x - this.x;
+                const dy = playerCandidate.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                const alertRangeMeters = 50; // 50m alert acquisition range
+                if (dist < alertRangeMeters * UNITS_PER_METER) {
+                  this.focus = playerCandidate;
+                }
+              }
+            }
+
+            // Hear noise? (from player firing unsilenced weapons or killing enemies)
+            if (target && target.lastNoisePosition && this.aiState === 'UNALERTED') {
+              const dist = Math.hypot(target.lastNoisePosition.x - this.x, target.lastNoisePosition.y - this.y);
+              if (dist < (target.noiseRadius + 100) * UNITS_PER_METER) { // +100 padding for realism
+                 this.alertTimer = 3; // Become cautious
+                 this.lastDamageAngle = Math.atan2(target.lastNoisePosition.y - this.y, target.lastNoisePosition.x - this.x);
+              }
+            }
+
+      if (aliveCandidates.length === 0) {
+        // No eligible target
+        this.alertTimer = Math.max(0, this.alertTimer - dt);
       
-      if (this.alertTimer > 0) {
-        // Alerted: turn and move toward last known damage source
-        const targetAngle = this.lastDamageAngle;
-        this.rotateTowards(targetAngle, dt);
-        this.applyVelocity(
-          Math.cos(targetAngle) * 0.7, 
-          Math.sin(targetAngle) * 0.7, 
-          dt, 
-          this.acceleration * 0.7
-        );
+        if (this.alertTimer > 0) {
+          // CAUTIOUS: turn and move toward last known damage source
+          this.aiState = 'CAUTIOUS';
+          const targetAngle = this.lastDamageAngle;
+          this.rotateTowards(targetAngle, dt);
+          this.applyVelocity(
+            Math.cos(targetAngle) * 0.7, 
+            Math.sin(targetAngle) * 0.7, 
+            dt, 
+            this.acceleration * 0.7
+          );
+          return;
+        }
+      
+        // UNALERTED: patrol
+        this.patrolTimer -= dt;
+        if (this.patrolTimer <= 0) {
+          this.patrolTimer = 3 + Math.random() * 4;
+          this.patrolAngle += (Math.random() - 0.5) * Math.PI;
+        }
+        const dirX = Math.cos(this.patrolAngle);
+        const dirY = Math.sin(this.patrolAngle);
+        this.applyVelocity(dirX * 0.5, dirY * 0.5, dt, this.acceleration * 0.5);
+        this.angle = this.patrolAngle;
         return;
       }
-      
-      // No target, not alerted: patrol
-      this.patrolTimer -= dt;
-      if (this.patrolTimer <= 0) {
-        this.patrolTimer = 3 + Math.random() * 4;
-        this.patrolAngle += (Math.random() - 0.5) * Math.PI;
-      }
-      const dirX = Math.cos(this.patrolAngle);
-      const dirY = Math.sin(this.patrolAngle);
-      this.applyVelocity(dirX * 0.5, dirY * 0.5, dt, this.acceleration * 0.5);
-      this.angle = this.patrolAngle;
-      return;
-    }
 
-    const currentFocusAlive = this.focus && isTargetAlive(this.focus);
-    // Keep focus if alive and still in vision cone (with some persistence)
-    if (currentFocusAlive && isInVisionCone(this, this.focus)) {
-      // Keep current focus
-    } else {
-      // Find new focus only from candidates in vision cone
-      const visibleCandidates = aliveCandidates.filter(c => isInVisionCone(this, c));
-      if (visibleCandidates.length > 0) {
-        this.focus = visibleCandidates.reduce((best, candidate) => {
-          if (!best) return candidate;
-          const bestThreat = best.threat ?? 1;
-          const candidateThreat = candidate.threat ?? 1;
-          const bestDist = Math.hypot(best.x - this.x, best.y - this.y) / bestThreat;
-          const candidateDist = Math.hypot(candidate.x - this.x, candidate.y - this.y) / candidateThreat;
-          return candidateDist < bestDist ? candidate : best;
-        }, null);
+      const currentFocusAlive = this.focus && isTargetAlive(this.focus);
+      // Keep focus if alive and still in vision cone (with some persistence)
+      if (currentFocusAlive && isInVisionCone(this, this.focus)) {
+        // Keep current focus
       } else {
-        this.focus = null; // Lost sight of all targets
+        // Find new focus only from candidates in vision cone
+        const visibleCandidates = aliveCandidates.filter(c => isInVisionCone(this, c));
+        if (visibleCandidates.length > 0) {
+          this.focus = visibleCandidates.reduce((best, candidate) => {
+            if (!best) return candidate;
+            const bestThreat = best.threat ?? 1;
+            const candidateThreat = candidate.threat ?? 1;
+            const bestDist = Math.hypot(best.x - this.x, best.y - this.y) / bestThreat;
+            const candidateDist = Math.hypot(candidate.x - this.x, candidate.y - this.y) / candidateThreat;
+            return candidateDist < bestDist ? candidate : best;
+          }, null);
+        } else {
+          this.focus = null; // Lost sight of all targets
+        }
       }
-    }
 
-    if (this.focus) {
-      this.behavior(dt, this.focus, projectiles, enemies);
+      // Update AI state based on focus and alertTimer
+            if (this.focus) {
+              this.aiState = 'ALERTED';
+            } else if (this.alertTimer > 0) {
+              this.aiState = 'CAUTIOUS';
+            }
+
+            // CAUTIOUS state: seek cover (per wiki - enemies find cover when searching)
+            if (this.aiState === 'CAUTIOUS' && !this.focus) {
+              this.seekCover(dt, enemies);
+              return;
+            }
+
+            if (this.focus) {
+              this.behavior(dt, this.focus, projectiles, enemies);
+            }
     }
-  }
 
   /**
    * Default AI. Units with a weapon kite at their preferred range and shoot;
@@ -379,6 +450,26 @@ export default class BaseEnemy {
     }
   }
 
+  /**
+   * CAUTIOUS search behaviour: walk toward the last heard noise / damage
+   * source with gun raised, then sweep the area (wiki: cautious enemies aim
+   * and search, canceling after 20-30s of no further contact).
+   * ponytail: no obstacle cover in the arena yet — search is open-ground.
+   * Upgrade path: raycast to nearest blocker when tilesets gain walls.
+   */
+  seekCover(dt, enemies) {
+    const targetAngle = this.lastDamageAngle;
+    this.rotateTowards(targetAngle, dt);
+    this.applyVelocity(
+      Math.cos(targetAngle) * 0.6,
+      Math.sin(targetAngle) * 0.6,
+      dt,
+      this.acceleration * 0.6
+    );
+    // Re-acquire visuals while approaching the noise source
+    this.alertTimer = Math.max(0, this.alertTimer - dt);
+  }
+
   applyVelocity(dirX, dirY, dt, rate) {
     const step = rate * dt;
     this.velocity.x = approach(this.velocity.x, dirX * this.moveSpeed, step);
@@ -407,7 +498,9 @@ export default class BaseEnemy {
     );
     ctx.stroke();
 
-    this.drawHealthBar(ctx, this.color);
+    // Draw health bar with armor color if applicable
+    const healthColor = this.health && this.health.hasArmor ? '#e0a635' : this.color;
+    this.drawHealthBar(ctx, healthColor);
     ctx.restore();
   }
 

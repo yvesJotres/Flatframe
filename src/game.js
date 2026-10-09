@@ -8,10 +8,12 @@ import { MainMenu } from './ui/main_menu.js';
 import { SimulacrumMenu } from './ui/simulacrum/core/menu.js';
 import { InputHandler } from './core/input_handler.js';
 import { getMission, waveSize } from './missions/missions.js';
+import { spawnEnemy, updateSpawns, initSpawnSystem, setEnemies } from './entities/ai/spawner.js';
 import { audioManager } from './core/audio.js';
 import { createMenuMusic } from './core/menu_music.js';
 import { rollLootDrop, applyLootPickup } from './entities/loot.js';
 import { UNITS_PER_METER } from './core/constants.js';
+import { updateEnemies } from './core/ai_behavior.js';
 
 window.onerror = function (msg, url, lineNo, columnNo, error) {
   console.error('[GLOBAL ERROR]:', { msg, url, lineNo, columnNo, error });
@@ -126,63 +128,15 @@ function drawGrid() {
   }
 }
 
-function spawnEnemy(lvl = 1) {
-  const edge = Math.floor(Math.random() * 4);
-  let x, y, padding = 30;
-  if (edge === 0) { x = Math.random() * canvas.width; y = padding; }
-  else if (edge === 1) { x = canvas.width - padding; y = Math.random() * canvas.height; }
-  else if (edge === 2) { x = Math.random() * canvas.width; y = canvas.height - padding; }
-  else { x = padding; y = Math.random() * canvas.height; }
-
-  if (player) {
-    const dist = Math.hypot(x - player.x, y - player.y);
-    if (dist < 150) {
-      x = (x + canvas.width / 2) % (canvas.width - padding * 2) + padding;
-      y = (y + canvas.height / 2) % (canvas.height - padding * 2) + padding;
-    }
-  }
-  enemies.push(new Lancer(x, y, { lvl }));
-}
-
-function updateSpawns(dt) {
-  if (!mission) return;
-  spawnTimer += dt;
-  const interval = mission.spawnInterval ?? 1.1;
-
-  if (mission.id === 'exterminate') {
-    const level = 1 + Math.floor(kills / (mission.levelPerKills ?? 8));
-    if (kills + enemies.length < mission.killQuota && enemies.length < mission.maxEnemies) {
-      if (spawnTimer >= interval) { spawnTimer = 0; spawnEnemy(level); }
-    }
-  } else if (mission.id === 'defense' || mission.id === 'survival') {
-    if (waveEnemiesSpawned < waveEnemiesTotal) {
-      if (enemies.length < mission.maxEnemies && spawnTimer >= interval) {
-        spawnTimer = 0; spawnEnemy(currentWave); waveEnemiesSpawned++;
-      }
-    } else if (enemies.length === 0) {
-      if (mission.endless || currentWave < (mission.waveLimit ?? 5)) {
-        waveTimer += dt;
-        if (waveTimer >= (mission.waveBreak ?? 3)) {
-          waveTimer = 0; currentWave++; waveEnemiesSpawned = 0;
-          waveEnemiesTotal = waveSize(mission, currentWave);
-        }
-      }
-    }
-  }
-}
 
 function updateWorld(dt, { withMission = false } = {}) {
   player.update(dt, inputHandler, projectiles, enemies, camera);
   clampToArena(player);
   updateCamera(dt);
 
-  const targets = [];
-  if (player.alive && !player.isBleedingOut) targets.push(player);
-  if (objective && objective.alive) targets.push(objective);
-
+  updateEnemies(dt, enemies, player, objective, projectiles);
   for (const enemy of enemies) {
     if (enemy.update && enemy.hp > 0) {
-      enemy.update(dt, targets, projectiles, enemies);
       clampToArena(enemy);
     }
   }
@@ -199,13 +153,19 @@ function updateWorld(dt, { withMission = false } = {}) {
   }
 
   const survivors = enemies.filter((enemy) => enemy.hp > 0);
-  for (const dead of enemies.filter(e => e.hp <= 0)) {
-    loot.push(...rollLootDrop(dead));
-  }
-  kills += enemies.length - survivors.length;
-  enemies = survivors;
-  loot = loot.filter(l => !l.collected && l.age < l.lifetime);
-  projectiles = projectiles.filter((p) => p.active);
+    for (const dead of enemies.filter(e => e.hp <= 0)) {
+      // Emit kill noise at death position (audible ~5m per wiki)
+      if (player && !player.isSilenced) {
+        player.lastNoisePosition = { x: dead.x, y: dead.y };
+        player.lastNoiseTime = 0;
+      }
+      loot.push(...rollLootDrop(dead));
+    }
+    kills += enemies.length - survivors.length;
+    enemies = survivors;
+    setEnemies(enemies);
+    loot = loot.filter(l => !l.collected && l.age < l.lifetime);
+    projectiles = projectiles.filter((p) => p.active);
 }
 
 function missionFailed() {
@@ -228,6 +188,7 @@ function startMission(missionId) {
   spawnTimer = 0; currentWave = 1; waveEnemiesSpawned = 0;
   waveEnemiesTotal = waveSize(mission, currentWave);
   waveTimer = 0;
+  initSpawnSystem(canvas, player, enemies, mission, kills, waveEnemiesSpawned, waveEnemiesTotal, spawnTimer, currentWave, waveTimer);
 
   if (mission.objective) {
     objective = new CryoPod(canvas.width / 2 + 60, canvas.height / 2, mission.objective);

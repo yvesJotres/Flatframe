@@ -6,6 +6,13 @@
 
 export const UNITS_PER_METER = 15;
 export const METERS_TO_PIXELS = UNITS_PER_METER;
+export const GRID_SIZE = UNITS_PER_METER;
+
+export const AI_STATES = {
+  UNALERTED: 'UNALERTED',
+  CAUTIOUS: 'CAUTIOUS',
+  ALERTED: 'ALERTED'
+};
 
 // Combat Constants
 export const HITSCAN_SPEED = 100000;

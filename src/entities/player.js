@@ -10,63 +10,73 @@ import { WeaponSwitchHandler } from '../core/weapon_switch_handler.js';
 
 export default class Player {
   constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.velocity = { x: 0, y: 0 };
-    this.radius = 16;
+      this.x = x;
+      this.y = y;
+      this.velocity = { x: 0, y: 0 };
+      this.radius = 16;
 
-    // Movement tuning (px/s and px/s²)
-    this.moveSpeed = 400;
-    this.acceleration = 3600;
-    this.deceleration = 4800;
+      // Movement tuning (px/s and px/s²)
+      this.moveSpeed = 400;
+      this.acceleration = 3600;
+      this.deceleration = 4800;
 
-    // Parkour
-    this.bulletJumpSpeed = 1200;
-    this.bulletJumpCooldown = 0.3;
-    this.bulletJumpTimer = 0;
-    this.isBulletJumping = false;
-    this.bulletJumpDirection = { x: 0, y: 0 };
-    this.bulletJumpVisualTimer = 0;
+      // Parkour
+      this.bulletJumpSpeed = 1200;
+      this.bulletJumpCooldown = 0.3;
+      this.bulletJumpTimer = 0;
+      this.isBulletJumping = false;
+      this.bulletJumpDirection = { x: 0, y: 0 };
+      this.bulletJumpVisualTimer = 0;
 
-    this.angle = 0;
+      this.angle = 0;
 
-    // Excalibur stats (Rank 30)
-    this.healthComponent = new HealthComponent({
-      maxHp: 370,
-      maxShield: 370,
-      armor: 240,
-    }, true);
-    this.status = new StatusManager();
-    this.maxEnergy = 150;
-    this.energy = this.maxEnergy;
+      // Excalibur stats (Rank 30)
+      this.healthComponent = new HealthComponent({
+              maxHp: 370,
+              maxShield: 370,
+              armor: 240,
+            }, true);
+            this.status = new StatusManager();
+            this.maxEnergy = 150;
+            this.energy = this.maxEnergy;
 
-    this.shieldRegenDelay = 3;
-    this.shieldRegenRate = 0.15;
-    this.timeSinceDamage = Infinity;
-    this.alive = true;
+            // Shield recharge (wiki formula with mod bonus support)
+            this.shieldRechargeBonus = 0; // From mods like Fast Deflection, Vigilante Vigor, etc.
+            this.timeSinceDamage = Infinity;
+            this.alive = true;
 
-    this.primaryWeapon = new PrimaryWeapon();
-    this.isBleedingOut = false;
-    this.awaitingRevive = false;
-    this.bleedoutTimer = 0;
-    this.revivesRemaining = 4;
-    this.reviveHoldTime = 0;
-    this.downedX = 0;
-    this.downedY = 0;
-    this.awaitingPulse = 0;
-    this.secondaryWeapon = new SecondaryWeapon();
-    this.meleeWeapon = new MeleeWeapon();
-    this.currentWeapon = this.primaryWeapon;
-    this.lastRangedWeapon = this.primaryWeapon;
-    this.lastShotTime = 0;
-    this.lastMeleeTime = 0;
-    this.meleeSwingTimer = 0;
-    this.meleeSwingType = 'normal'; // 'normal' | 'heavy'
-    this.meleeSwingHits = [];
-    this.lungeTarget = null;
-    this.lungeTimer = 0;
-        this.weaponSwitchHandler = new WeaponSwitchHandler(this);
-  }
+      // Stealth/Noise system (per Warframe wiki)
+      // Killing an enemy produces sound audible ~5m (75 units)
+      // Firing unsilenced weapon produces sound audible ~20m (300 units)
+      this.lastNoisePosition = null;
+      this.lastNoiseTime = 0;
+      this.noiseRadius = 75; // 5m kill noise radius
+      this.weaponNoiseRadius = 300; // 20m unsilenced weapon noise radius
+      this.isInvisible = false; // Will be set by Warframe abilities
+      this.isSilenced = false; // Will be set by weapon mods
+
+      this.primaryWeapon = new PrimaryWeapon();
+      this.isBleedingOut = false;
+      this.awaitingRevive = false;
+      this.bleedoutTimer = 0;
+      this.revivesRemaining = 4;
+      this.reviveHoldTime = 0;
+      this.downedX = 0;
+      this.downedY = 0;
+      this.awaitingPulse = 0;
+      this.secondaryWeapon = new SecondaryWeapon();
+      this.meleeWeapon = new MeleeWeapon();
+      this.currentWeapon = this.primaryWeapon;
+      this.lastRangedWeapon = this.primaryWeapon;
+      this.lastShotTime = 0;
+      this.lastMeleeTime = 0;
+      this.meleeSwingTimer = 0;
+      this.meleeSwingType = 'normal'; // 'normal' | 'heavy'
+      this.meleeSwingHits = [];
+      this.lungeTarget = null;
+      this.lungeTimer = 0;
+          this.weaponSwitchHandler = new WeaponSwitchHandler(this);
+    }
 
   // Backward compatibility getters/setters
   get maxHealth() { return this.healthComponent.maxHp; }
@@ -192,12 +202,28 @@ export default class Player {
     }
 
     // 2. Shields recharge
+    // Wiki rules: partial shields recharge after 1s without damage;
+    // fully depleted shields recharge 4s after the last hit (Shield Gating).
+    // Delay reduction: cap 80%
+    const delayReduction = Math.min(0.8, this.shieldRechargeDelayReduction ?? 0);
     this.timeSinceDamage += dt;
-    if (this.timeSinceDamage >= this.shieldRegenDelay) {
-      this.shield = Math.min(
-        this.maxShield,
-        this.shield + this.maxShield * this.shieldRegenRate * dt
-      );
+    const regenDelay = (this.shield <= 0 ? 4 : 1) * (1 - delayReduction);
+    
+    // Check if magnetic status prevents regen
+    if (this.timeSinceDamage >= regenDelay && this.shield < this.maxShield && this.healthComponent.canRegenerateShield()) {
+      // Wiki: (15 + 0.05 * MaxShields) * (1 + Bonus) units/s
+      const bonus = this.shieldRechargeBonus ?? 0;
+      const regenAmount = (15 + 0.05 * this.maxShield) * (1 + bonus) * dt;
+      // Recharge during the gate invulnerability window immediately ends it
+      if (this.healthComponent.shieldGateTimer > 0) {
+        this.healthComponent.shieldGateTimer = 0;
+        this.healthComponent.shieldGateInvulnerable = false;
+      }
+      this.shield = Math.min(this.maxShield, this.shield + regenAmount);
+      // Track max shield replenished since last gate
+      if (this.shield > this.healthComponent.maxShieldSinceLastGate) {
+        this.healthComponent.maxShieldSinceLastGate = this.shield;
+      }
     }
 
     // 3. Aim toward mouse
@@ -283,18 +309,23 @@ export default class Player {
     }
 
     // 4. Normal melee swing (left click) or shooting
-    if (firing) {
-      if (isMeleeEquipped) {
-        const hits = this.meleeWeapon.melee(this, enemies);
-        if (hits !== null) { // null = still on cooldown; [] = a whiff that still swings
-          this.meleeSwingTimer = 0.15;
-          this.meleeSwingHits = hits.map(e => ({ angle: Math.atan2(e.y - this.y, e.x - this.x), distance: Math.hypot(e.x - this.x, e.y - this.y) }));
-          this.meleeSwingType = 'normal';
+        if (firing) {
+          if (isMeleeEquipped) {
+            const hits = this.meleeWeapon.melee(this, enemies);
+            if (hits !== null) { // null = still on cooldown; [] = a whiff that still swings
+              this.meleeSwingTimer = 0.15;
+              this.meleeSwingHits = hits.map(e => ({ angle: Math.atan2(e.y - this.y, e.x - this.x), distance: Math.hypot(e.x - this.x, e.y - this.y) }));
+              this.meleeSwingType = 'normal';
+            }
+          } else {
+            // Fire ranged weapon - emit noise if not silenced
+            if (!this.isSilenced) {
+              this.lastNoisePosition = { x: this.x, y: this.y };
+              this.lastNoiseTime = 0; // Reset noise timer
+            }
+            this.currentWeapon.fire(this, mouseWorld, dt, projectiles);
+          }
         }
-      } else {
-        this.currentWeapon.fire(this, mouseWorld, dt, projectiles);
-      }
-    }
 
     // Heavy attack (middle click while melee equipped)
     // Lockout: check meleeSwingTimer to prevent light-attack-like spam
@@ -355,8 +386,14 @@ export default class Player {
       }
     }
 
+    const oldShield = this.healthComponent.shield;
     const toHealth = this.healthComponent.takeDamage(damage, mitigation);
-    this.timeSinceDamage = 0;
+    const newShield = this.healthComponent.shield;
+    
+    // Only reset delay if shield was actually damaged
+    if (newShield < oldShield) {
+      this.timeSinceDamage = 0;
+    }
 
     if (this.healthComponent.isDead) {
       if (!this.isBleedingOut && this.revivesRemaining > 0) {
