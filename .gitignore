@@ -3,8 +3,6 @@ node_modules/
 Thumbs.db
 *.log
 .vscode/
-.hermes-tmp.*
-src/test.txt
 CLAUDE_CODE_TASK.md
 ref/
 mockup/
