@@ -139,6 +139,12 @@ canvas.addEventListener('mouseup', e => { if (e.button === 0 && isPlacing && cur
 
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
+  if (e.altKey) {
+    const step = Math.PI / 8; // 22.5°
+    previewRotation = (previewRotation + (e.deltaY > 0 ? step : -step) + Math.PI * 2) % (Math.PI * 2);
+    redraw();
+    return;
+  }
   const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
   const newZoom = Math.max(0.25, Math.min(4, camera.zoom * zoomFactor));
   const rect = canvas.getBoundingClientRect();
