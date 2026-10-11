@@ -566,7 +566,7 @@ function gameLoop(timestamp) {
                 else if (choice.action === 'simulacrum') {
                   startSimulacrum();
                 } else if (choice.action === 'world-builder') {
-                  window.open('world_builder.html?dev=1', '_blank');
+                  window.open('dev/world_builder.html?dev=1', '_blank');
                 }
               }
               mainMenu.draw(ctx, canvas);
