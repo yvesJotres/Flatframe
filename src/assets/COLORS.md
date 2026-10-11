@@ -1,7 +1,6 @@
 # Flatframe Color Palette
 
-Color definitions for the Flatframe game, based on the official [Warframe HUD Color Palette](https://wiki.warframe.com/w/Heads-Up_Display).
-
+Color definitions for the Flatframe game.
 ## Core Vitals
 
 | Element | Hex Code | Usage |

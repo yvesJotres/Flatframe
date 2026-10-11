@@ -1,7 +1,4 @@
 // Flatframe Color Constants
-// All colors based on official Warframe HUD Color Palette
-// Source: https://wiki.warframe.com/w/Heads-Up_Display
-
 // Core Vitals
 export const COLORS = {
   // Health & Shields

@@ -114,13 +114,15 @@ export default class LootDrop {
     ctx.arc(-3, -3, this.radius * 0.25, 0, Math.PI * 2);
     ctx.fill();
 
-    // Label
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 11px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(this.label, 0, 0);
+    // Label (only for ammo types)
+        if (this.type === LOOT_TYPES.PRIMARY_AMMO || this.type === LOOT_TYPES.SECONDARY_AMMO) {
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 11px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(this.label, 0, 0);
+        }
 
     ctx.restore();
   }
