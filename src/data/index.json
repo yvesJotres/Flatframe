@@ -1,0 +1,144 @@
+{
+  "weapons": [
+    {
+      "name": "Braton",
+      "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/Braton/BratonWeapon",
+      "type": "Rifle",
+      "masteryReq": 0,
+      "tags": [
+        "Tenno"
+      ],
+      "category": "Primary",
+      "chunk": "primary-rifle"
+    },
+    {
+      "name": "Grakata",
+      "uniqueName": "/Lotus/Weapons/Grinner/LongGuns/Grakata/GrakataWeapon",
+      "type": "Rifle",
+      "masteryReq": 4,
+      "tags": [
+        "Grineer"
+      ],
+      "category": "Primary",
+      "chunk": "primary-rifle"
+    },
+    {
+      "name": "Dera",
+      "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/Dera/DeraWeapon",
+      "type": "Rifle",
+      "masteryReq": 2,
+      "tags": [
+        "Corpus"
+      ],
+      "category": "Primary",
+      "chunk": "primary-rifle"
+    },
+    {
+      "name": "Lato",
+      "uniqueName": "/Lotus/Weapons/Tenno/Pistol/Lato/LatoWeapon",
+      "type": "Pistol",
+      "masteryReq": 0,
+      "tags": [
+        "Tenno"
+      ],
+      "category": "Secondary",
+      "chunk": "secondary-pistol"
+    },
+    {
+      "name": "Skana",
+      "uniqueName": "/Lotus/Weapons/Tenno/Melee/Sword/Skana/SkanaWeapon",
+      "type": "Sword",
+      "masteryReq": 0,
+      "tags": [
+        "Tenno"
+      ],
+      "category": "Melee",
+      "chunk": "melee-sword"
+    },
+    {
+      "name": "Prova",
+      "uniqueName": "/Lotus/Weapons/Corpus/Melee/Machete/Prova/ProvaWeapon",
+      "type": "Machete",
+      "masteryReq": 2,
+      "tags": [
+        "Corpus"
+      ],
+      "category": "Melee",
+      "chunk": "melee-sword"
+    }
+  ],
+  "warframes": [
+    {
+      "name": "Excalibur",
+      "uniqueName": "/Lotus/Powersuits/Excalibur/Excalibur",
+      "masteryReq": 0,
+      "tags": [
+        "Tenno"
+      ],
+      "chunk": "warframes-tenno",
+      "type": "Warframe"
+    }
+  ],
+  "mods": [
+    {
+      "name": "Serration",
+      "uniqueName": "/Lotus/Upgrades/Mods/Damage/SerrationMod",
+      "polarity": "madurai",
+      "rarity": "Common",
+      "compatName": "Primary",
+      "masteryReq": 0,
+      "chunk": "mods-damage",
+      "type": "Rifle Mod"
+    },
+    {
+      "name": "Hornet Strike",
+      "uniqueName": "/Lotus/Upgrades/Mods/Damage/HornetStrikeMod",
+      "polarity": "madurai",
+      "rarity": "Common",
+      "compatName": "Secondary",
+      "masteryReq": 0,
+      "chunk": "mods-damage",
+      "type": "Pistol Mod"
+    },
+    {
+      "name": "Pressure Point",
+      "uniqueName": "/Lotus/Upgrades/Mods/Damage/PressurePointMod",
+      "polarity": "madurai",
+      "rarity": "Common",
+      "compatName": "Melee",
+      "masteryReq": 0,
+      "chunk": "mods-damage",
+      "type": "Melee Mod"
+    },
+    {
+      "name": "Heated Charge",
+      "uniqueName": "/Lotus/Upgrades/Mods/Elemental/Fire/HeatedChargeMod",
+      "polarity": "madurai",
+      "rarity": "Rare",
+      "compatName": "Primary",
+      "masteryReq": 0,
+      "chunk": "mods-elemental",
+      "type": "Rifle Mod"
+    },
+    {
+      "name": "Redirection",
+      "uniqueName": "/Lotus/Upgrades/Mods/Utility/RedirectionMod",
+      "polarity": "vazarin",
+      "rarity": "Common",
+      "compatName": "Warframe",
+      "masteryReq": 0,
+      "chunk": "mods-utility",
+      "type": "Warframe Mod"
+    },
+    {
+      "name": "Vitality",
+      "uniqueName": "/Lotus/Upgrades/Mods/Utility/VitalityMod",
+      "polarity": "vazarin",
+      "rarity": "Common",
+      "compatName": "Warframe",
+      "masteryReq": 0,
+      "chunk": "mods-utility",
+      "type": "Warframe Mod"
+    }
+  ]
+}

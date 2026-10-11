@@ -1,27 +1,34 @@
 import Weapon from './weapon.js';
-import { SKANA } from './data/skana.js';
-import { HEAT_DAGGER } from './data/heat_dagger.js';
-import { SHEEV } from './data/sheev.js';
-import { audioManager } from '../core/audio.js';
-import { UNITS_PER_METER, DEFAULT_MELEE_COOLDOWN_MS, COMBO_RESET_MS, PARRY_WINDOW_SEC } from '../core/constants.js';
+import { dataLoader } from '../data/data_loader.js';
+import { adaptWeapon } from '../data/weapon_adapter.js';
+import { audioManager } from '../engine/audio.js';
+import { UNITS_PER_METER, DEFAULT_MELEE_COOLDOWN_MS, COMBO_RESET_MS, PARRY_WINDOW_SEC } from '../engine/constants.js';
 
-export const MELEE_WEAPONS = {
-  [SKANA.name]: SKANA,
-  [HEAT_DAGGER.name]: HEAT_DAGGER,
-  [SHEEV.name]: SHEEV,
-};
+// Filled in place (not reassigned) so modules that captured this object early, like the Arsenal, see the data
+const MELEE_WEAPONS = {};
+let initialized = false;
 
-export const DEFAULT_MELEE = SKANA.name;
+export async function initMeleeWeapons() {
+  if (initialized) return MELEE_WEAPONS;
+  const weapons = await dataLoader.getByChunk('weapons', 'melee-sword');
+  Object.assign(MELEE_WEAPONS, Object.fromEntries(weapons.map(w => [w.name, adaptWeapon(w)])));
+  initialized = true;
+  return MELEE_WEAPONS;
+}
+
+export const DEFAULT_MELEE = 'Skana';
+export { MELEE_WEAPONS };
 
 export default class MeleeWeapon extends Weapon {
   constructor(name = DEFAULT_MELEE) {
-    const stats = MELEE_WEAPONS[name];
-    if (!stats) throw new Error('Unknown melee weapon: ' + name);
-    super(stats);
-    this.category = 'melee';
-    this.arc = ((this.attack.arc ?? 90) * Math.PI) / 180;
-    this.heavyAttackData = stats.attacks?.heavy ?? null;
-    this.comboCount = 0;
+      if (!initialized) throw new Error('Call initMeleeWeapons() before creating MeleeWeapon');
+      const stats = MELEE_WEAPONS[name];
+      if (!stats) throw new Error('Unknown melee weapon: ' + name);
+      super(stats);
+      this.category = 'melee';
+      this.arc = ((this.attack.arc ?? 90) * Math.PI) / 180;
+      this.heavyAttackData = stats.attack?.heavyAttackData ?? null;
+      this.comboCount = 0;
     this.comboTimer = 0;
     this.lastMeleeTime = 0;
     // Parry state
@@ -120,13 +127,13 @@ export default class MeleeWeapon extends Weapon {
       }
 
       // Apply damage
-            const hit = this.rollHit();
-            hit.total *= comboMult;
-            // Melee: check if aiming at weakspot (head) based on angle to target
-            const toTargetAngle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
-            const angleDiff = Math.abs(Math.atan2(Math.sin(toTargetAngle - player.angle), Math.cos(toTargetAngle - player.angle)));
-            const isWeakspot = angleDiff < 0.15 && enemy.weakspotRadius; // small angle tolerance
-            enemy.takeDamage(hit, player.x, player.y, isWeakspot);
+      const hit = this.rollHit();
+      hit.total *= comboMult;
+      // Melee: check if aiming at weakspot (head) based on angle to target
+      const toTargetAngle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+      const angleDiff = Math.abs(Math.atan2(Math.sin(toTargetAngle - player.angle), Math.cos(toTargetAngle - player.angle)));
+      const isWeakspot = angleDiff < 0.15 && enemy.weakspotRadius; // small angle tolerance
+      enemy.takeDamage(hit, player.x, player.y, isWeakspot);
       struck.push(enemy);
     }
 

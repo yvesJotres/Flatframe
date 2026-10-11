@@ -1,7 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import Player from '../src/entities/player.js';
-import BaseEnemy from '../src/entities/ai/enemies/base.js';
+import Player from '../src/warframe/player.js';
+import BaseEnemy from '../src/enemies/enemy.js';
+import { initPrimaryWeapons } from '../src/weapons/primary_weapon.js';
+import { initSecondaryWeapons } from '../src/weapons/secondary_weapon.js';
+import { initMeleeWeapons } from '../src/weapons/melee_weapon.js';
+
+await initPrimaryWeapons();
+await initSecondaryWeapons();
+await initMeleeWeapons();
 
 function noInput(overrides = {}) {
   return {
@@ -113,28 +120,30 @@ test('enemies wander instead of freezing when no target is eligible', () => {
   assert.ok(Math.hypot(e.x - x, e.y - y) > 1, 'enemy drifted while targetless');
 });
 
-test('enemy becomes alerted and moves toward attacker when damaged', () => {
+test('enemy becomes cautious and searches toward attacker when damaged', () => {
   const e = new BaseEnemy(100, 100);
   // Attack from the right (player at x=200)
   e.takeDamage(10, 200, 100);
-  assert.equal(e.alertTimer, 3, 'alert timer set');
+  assert.equal(e.alertState, 'cautious', 'alert state set to cautious');
+  assert.ok(e.alertTimer > 0, 'alert timer set');
   assert.ok(e.lastDamageAngle === 0 || e.lastDamageAngle > 0, 'damage angle stored (0 = right)');
   
-  // Update a few frames - should move toward attacker
+  // Update a few frames - should move toward attacker (searching)
   const startX = e.x;
   for (let i = 0; i < 60; i++) e.update(1 / 60, [], [], []);
-  assert.ok(e.x > startX, 'enemy moved toward attacker (right)');
+  assert.ok(e.x > startX, 'enemy moved toward attacker (right) while cautious');
 });
 
-test('enemy acquires player as focus when alerted and player in range', () => {
+test('enemy acquires player as focus when player enters vision while cautious', () => {
   const e = new BaseEnemy(100, 100);
   const player = { x: 300, y: 100, isPlayer: true, alive: true, hp: 100, health: { isDead: false } };
   
-  // Attack from far away (outside normal vision)
+  // Attack from far away (outside normal vision) - becomes cautious
   e.takeDamage(10, 300, 100);
-  assert.equal(e.alertTimer, 3);
+  assert.equal(e.alertState, 'cautious', 'alert state set to cautious');
   
-  // Update with player in candidates - should acquire focus
+  // Update with player in candidates - player is now in vision cone, should acquire focus and become alerted
   e.update(1/60, player, [], []);
-  assert.equal(e.focus, player, 'enemy acquired player as focus while alerted');
+  assert.equal(e.focus, player, 'enemy acquired player as focus');
+  assert.equal(e.alertState, 'alerted', 'enemy became alerted after seeing player');
 });

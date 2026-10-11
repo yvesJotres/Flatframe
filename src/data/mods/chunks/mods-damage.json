@@ -1,0 +1,290 @@
+[
+  {
+    "uniqueName": "/Lotus/Upgrades/Mods/Damage/SerrationMod",
+    "name": "Serration",
+    "polarity": "madurai",
+    "rarity": "Common",
+    "codexSecret": false,
+    "baseDrain": 6,
+    "fusionLimit": 10,
+    "compatName": "Primary",
+    "type": "Rifle Mod",
+    "levelStats": [
+      {
+        "stats": [
+          "+15% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+30% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+45% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+60% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+75% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+90% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+105% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+120% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+135% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+150% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+165% Damage"
+        ]
+      }
+    ],
+    "imageName": "Serration.jpg",
+    "category": "Mods",
+    "drops": [
+      {
+        "location": "Common Enemy Drops",
+        "type": "Serration",
+        "chance": 2.5,
+        "rarity": "Common"
+      }
+    ],
+    "tradable": true,
+    "wikiAvailable": true,
+    "wikiaThumbnail": "https://wiki.warframe.com/images/SerrationMod.png",
+    "wikiaUrl": "https://wiki.warframe.com/w/Serration",
+    "transmutable": true,
+    "introduced": {
+      "name": "Update 7",
+      "url": "https://wiki.warframe.com/w/Update_7",
+      "aliases": [
+        "7"
+      ],
+      "parent": "7",
+      "date": "2013-06-01"
+    },
+    "releaseDate": "2013-06-01",
+    "isPrime": false,
+    "masterable": true,
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Upgrades/Mods/Damage/HornetStrikeMod",
+    "name": "Hornet Strike",
+    "polarity": "madurai",
+    "rarity": "Common",
+    "codexSecret": false,
+    "baseDrain": 6,
+    "fusionLimit": 10,
+    "compatName": "Secondary",
+    "type": "Pistol Mod",
+    "levelStats": [
+      {
+        "stats": [
+          "+15% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+30% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+45% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+60% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+75% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+90% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+105% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+120% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+135% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+150% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+165% Damage"
+        ]
+      }
+    ],
+    "imageName": "HornetStrike.jpg",
+    "category": "Mods",
+    "drops": [
+      {
+        "location": "Common Enemy Drops",
+        "type": "Hornet Strike",
+        "chance": 2.5,
+        "rarity": "Common"
+      }
+    ],
+    "tradable": true,
+    "wikiAvailable": true,
+    "wikiaThumbnail": "https://wiki.warframe.com/images/HornetStrikeMod.png",
+    "wikiaUrl": "https://wiki.warframe.com/w/Hornet_Strike",
+    "transmutable": true,
+    "introduced": {
+      "name": "Update 7",
+      "url": "https://wiki.warframe.com/w/Update_7",
+      "aliases": [
+        "7"
+      ],
+      "parent": "7",
+      "date": "2013-06-01"
+    },
+    "releaseDate": "2013-06-01",
+    "isPrime": false,
+    "masterable": true,
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Upgrades/Mods/Damage/PressurePointMod",
+    "name": "Pressure Point",
+    "polarity": "madurai",
+    "rarity": "Common",
+    "codexSecret": false,
+    "baseDrain": 6,
+    "fusionLimit": 10,
+    "compatName": "Melee",
+    "type": "Melee Mod",
+    "levelStats": [
+      {
+        "stats": [
+          "+15% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+30% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+45% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+60% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+75% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+90% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+105% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+120% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+135% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+150% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+165% Damage"
+        ]
+      }
+    ],
+    "imageName": "PressurePoint.jpg",
+    "category": "Mods",
+    "drops": [
+      {
+        "location": "Common Enemy Drops",
+        "type": "Pressure Point",
+        "chance": 2.5,
+        "rarity": "Common"
+      }
+    ],
+    "tradable": true,
+    "wikiAvailable": true,
+    "wikiaThumbnail": "https://wiki.warframe.com/images/PressurePointMod.png",
+    "wikiaUrl": "https://wiki.warframe.com/w/Pressure_Point",
+    "transmutable": true,
+    "introduced": {
+      "name": "Update 7",
+      "url": "https://wiki.warframe.com/w/Update_7",
+      "aliases": [
+        "7"
+      ],
+      "parent": "7",
+      "date": "2013-06-01"
+    },
+    "releaseDate": "2013-06-01",
+    "isPrime": false,
+    "masterable": true,
+    "masteryReq": 0
+  }
+]

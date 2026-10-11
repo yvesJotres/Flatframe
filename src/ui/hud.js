@@ -1,3 +1,4 @@
+import { COMBO_RESET_MS } from '../engine/constants.js';
 // DOM heads-up display.
 //
 // The markup lives in index.html; this class owns the numbers and the handful of
@@ -26,6 +27,8 @@ function setWidthPx(element, px) {
 function toggle(element, className, on) {
   if (element) element.classList.toggle(className, !!on);
 }
+
+const COMBO_TIER_HITS = 20; // matches MeleeWeapon.getComboMultiplier()
 
 export default class Hud {
   constructor() {
@@ -56,7 +59,14 @@ export default class Hud {
       // Weapon
       ammoPanel: pick('ammo-panel'),
       weaponName: pick('weapon-display'),
-      weaponStats: pick('weapon-stats'),
+      ammoCounts: document.querySelector('#ammo-panel .ammo-counts'),
+      meleePanel: pick('melee-panel'),
+      comboMult: pick('combo-mult'),
+      comboHits: pick('combo-hits'),
+      comboTierFill: pick('combo-tier-fill'),
+      comboDecayFill: pick('combo-decay-fill'),
+      heavyState: pick('heavy-state'),
+      parryState: pick('parry-state'),
       ammoValue: pick('ammo-display'),
       reserveValue: pick('reserve-display'),
       magBar: pick('mag-bar'),
@@ -81,6 +91,13 @@ export default class Hud {
 
   setVisible(visible) {
     toggle(this.el.root, 'hidden', !visible);
+    // The revive panel and damage flash live outside #hud, so leaving a mission
+    // (abort, restart, death) must clear them explicitly or they stay on screen.
+    if (!visible) {
+      toggle(this.el.revivePanel, 'hidden', true);
+      toggle(this.el.flash, 'hit', false);
+      this.flashTimer = 0;
+    }
   }
 
   // Called when a mission starts, so the banner matches the deployment.
@@ -104,8 +121,8 @@ export default class Hud {
 
   updateVitals(player, dt = 0) {
       if (player && player.isBleedingOut) {
-        // Show revive panel (middle screen)
-        toggle(this.el.revivePanel, 'hidden', false);
+        // Show revive panel (middle screen), but never while the HUD itself is hidden (paused, menus)
+        toggle(this.el.revivePanel, 'hidden', this.el.root?.classList.contains('hidden'));
 
         // Update middle screen revive counter
                 setText(this.el.reviveCount, String(player.revivesRemaining));
@@ -194,16 +211,24 @@ export default class Hud {
   updateWeapon(player) {
     const weapon = player.currentWeapon;
 
-    // Handle melee weapons differently (no ammo, show combo)
-    if (weapon.category === 'melee') {
-      const comboMult = weapon.getComboMultiplier ? weapon.getComboMultiplier() : 1;
-      setText(this.el.weaponName, weapon.name);
-      setText(
-        this.el.weaponStats,
-        `${weapon.totalDamage.toFixed(1)} dmg · ${weapon.meleeCooldown.toFixed(2)}s swing · Combo: ${weapon.comboCount} (${comboMult.toFixed(2)}x)`
-      );
-      setText(this.el.ammoValue, '');
-      setText(this.el.reserveValue, '');
+    const isMelee = weapon.category === 'melee';
+    toggle(this.el.meleePanel, 'hidden', !isMelee);
+    toggle(this.el.ammoCounts, 'hidden', isMelee);
+
+    // Melee: combo multiplier, hit count, progress to next tier, combo decay, heavy/parry state
+    if (isMelee) {
+      const hits = weapon.comboCount ?? 0;
+      const mult = weapon.getComboMultiplier ? weapon.getComboMultiplier() : 1;
+      setText(this.el.weaponName, `${weapon.name} [${weapon.rank || 0}]`);
+      setText(this.el.comboMult, `${mult.toFixed(2).replace(/0$/, '')}x`);
+      setText(this.el.comboHits, `${hits} ${hits === 1 ? 'HIT' : 'HITS'}`);
+      setWidth(this.el.comboTierFill, (hits % COMBO_TIER_HITS) / COMBO_TIER_HITS);
+      setWidth(this.el.comboDecayFill, hits > 0 ? Math.max(0, weapon.comboTimer) / COMBO_RESET_MS : 0);
+      toggle(this.el.comboMult, 'boosted', mult > 1);
+      // Heavy attack spends the combo, so it is only worth it with hits banked
+      toggle(this.el.heavyState, 'ready', hits > 0);
+      toggle(this.el.parryState, 'active', !!weapon.isParrying);
+      toggle(this.el.parryState, 'perfect', !!weapon.checkPerfectParry?.());
       return;
     }
 

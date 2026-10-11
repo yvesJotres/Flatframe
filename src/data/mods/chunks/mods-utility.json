@@ -1,0 +1,194 @@
+[
+  {
+    "uniqueName": "/Lotus/Upgrades/Mods/Utility/RedirectionMod",
+    "name": "Redirection",
+    "polarity": "vazarin",
+    "rarity": "Common",
+    "codexSecret": false,
+    "baseDrain": 6,
+    "fusionLimit": 10,
+    "compatName": "Warframe",
+    "type": "Warframe Mod",
+    "levelStats": [
+      {
+        "stats": [
+          "+40% Shields"
+        ]
+      },
+      {
+        "stats": [
+          "+80% Shields"
+        ]
+      },
+      {
+        "stats": [
+          "+120% Shields"
+        ]
+      },
+      {
+        "stats": [
+          "+160% Shields"
+        ]
+      },
+      {
+        "stats": [
+          "+200% Shields"
+        ]
+      },
+      {
+        "stats": [
+          "+240% Shields"
+        ]
+      },
+      {
+        "stats": [
+          "+280% Shields"
+        ]
+      },
+      {
+        "stats": [
+          "+320% Shields"
+        ]
+      },
+      {
+        "stats": [
+          "+360% Shields"
+        ]
+      },
+      {
+        "stats": [
+          "+400% Shields"
+        ]
+      },
+      {
+        "stats": [
+          "+440% Shields"
+        ]
+      }
+    ],
+    "imageName": "Redirection.jpg",
+    "category": "Mods",
+    "drops": [
+      {
+        "location": "Common Enemy Drops",
+        "type": "Redirection",
+        "chance": 2.5,
+        "rarity": "Common"
+      }
+    ],
+    "tradable": true,
+    "wikiAvailable": true,
+    "wikiaThumbnail": "https://wiki.warframe.com/images/RedirectionMod.png",
+    "wikiaUrl": "https://wiki.warframe.com/w/Redirection",
+    "transmutable": true,
+    "introduced": {
+      "name": "Update 7",
+      "url": "https://wiki.warframe.com/w/Update_7",
+      "aliases": [
+        "7"
+      ],
+      "parent": "7",
+      "date": "2013-06-01"
+    },
+    "releaseDate": "2013-06-01",
+    "isPrime": false,
+    "masterable": true,
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Upgrades/Mods/Utility/VitalityMod",
+    "name": "Vitality",
+    "polarity": "vazarin",
+    "rarity": "Common",
+    "codexSecret": false,
+    "baseDrain": 6,
+    "fusionLimit": 10,
+    "compatName": "Warframe",
+    "type": "Warframe Mod",
+    "levelStats": [
+      {
+        "stats": [
+          "+40% Health"
+        ]
+      },
+      {
+        "stats": [
+          "+80% Health"
+        ]
+      },
+      {
+        "stats": [
+          "+120% Health"
+        ]
+      },
+      {
+        "stats": [
+          "+160% Health"
+        ]
+      },
+      {
+        "stats": [
+          "+200% Health"
+        ]
+      },
+      {
+        "stats": [
+          "+240% Health"
+        ]
+      },
+      {
+        "stats": [
+          "+280% Health"
+        ]
+      },
+      {
+        "stats": [
+          "+320% Health"
+        ]
+      },
+      {
+        "stats": [
+          "+360% Health"
+        ]
+      },
+      {
+        "stats": [
+          "+400% Health"
+        ]
+      },
+      {
+        "stats": [
+          "+440% Health"
+        ]
+      }
+    ],
+    "imageName": "Vitality.jpg",
+    "category": "Mods",
+    "drops": [
+      {
+        "location": "Common Enemy Drops",
+        "type": "Vitality",
+        "chance": 2.5,
+        "rarity": "Common"
+      }
+    ],
+    "tradable": true,
+    "wikiAvailable": true,
+    "wikiaThumbnail": "https://wiki.warframe.com/images/VitalityMod.png",
+    "wikiaUrl": "https://wiki.warframe.com/w/Vitality",
+    "transmutable": true,
+    "introduced": {
+      "name": "Update 7",
+      "url": "https://wiki.warframe.com/w/Update_7",
+      "aliases": [
+        "7"
+      ],
+      "parent": "7",
+      "date": "2013-06-01"
+    },
+    "releaseDate": "2013-06-01",
+    "isPrime": false,
+    "masterable": true,
+    "masteryReq": 0
+  }
+]

@@ -71,10 +71,10 @@ export default class Projectile {
       const hitRadius = this.radius + (target.radius ?? 16);
       if (startOffsetX * startOffsetX + startOffsetY * startOffsetY <= hitRadius * hitRadius) {
               // Check for weakspot/headshot
-              const isWeakspot = target.weakspotRadius
-                ? (startOffsetX * startOffsetX + startOffsetY * startOffsetY <= target.weakspotRadius * target.weakspotRadius)
-                : false;
-              target.takeDamage(this.hit, this.hit.sourceX, this.hit.sourceY, isWeakspot);
+                            const isWeakspot = target.weakspotRadius
+                              ? (startOffsetX * startOffsetX + startOffsetY * startOffsetY <= target.weakspotRadius * target.weakspotRadius)
+                              : false;
+                            target.takeDamage(this.hit, this.x, this.y, isWeakspot);
         if (this.punchThrough > 0) {
           this.punchThrough -= 1;
         } else {
@@ -85,6 +85,8 @@ export default class Projectile {
     }
 
     if (segmentLengthSq > 0) {
+      // Skip segment check if start check already hit (prevents double damage on hitscan)
+      if (!this.active) return;
       for (const target of targets) {
         if (!isAlive(target)) continue;
 
@@ -102,10 +104,10 @@ export default class Projectile {
 
         if (diffX * diffX + diffY * diffY <= hitRadius * hitRadius) {
                   // Check for weakspot/headshot
-                  const isWeakspot = target.weakspotRadius
-                    ? (diffX * diffX + diffY * diffY <= target.weakspotRadius * target.weakspotRadius)
-                    : false;
-                  target.takeDamage(this.hit, this.hit.sourceX, this.hit.sourceY, isWeakspot);
+                                    const isWeakspot = target.weakspotRadius
+                                      ? (diffX * diffX + diffY * diffY <= target.weakspotRadius * target.weakspotRadius)
+                                      : false;
+                                    target.takeDamage(this.hit, closestX, closestY, isWeakspot);
 
           if (this.punchThrough > 0) {
             this.punchThrough -= 1;
@@ -135,10 +137,10 @@ export default class Projectile {
       const hitRadius = this.radius + (target.radius ?? 16);
       if (endOffsetX * endOffsetX + endOffsetY * endOffsetY <= hitRadius * hitRadius) {
               // Check for weakspot/headshot
-              const isWeakspot = target.weakspotRadius
-                ? (endOffsetX * endOffsetX + endOffsetY * endOffsetY <= target.weakspotRadius * target.weakspotRadius)
-                : false;
-              target.takeDamage(this.hit, this.hit.sourceX, this.hit.sourceY, isWeakspot);
+                            const isWeakspot = target.weakspotRadius
+                              ? (endOffsetX * endOffsetX + endOffsetY * endOffsetY <= target.weakspotRadius * target.weakspotRadius)
+                              : false;
+                            target.takeDamage(this.hit, this.x, this.y, isWeakspot);
         if (this.punchThrough > 0) {
           this.punchThrough -= 1;
         } else {
@@ -149,14 +151,21 @@ export default class Projectile {
     }
 
     if (this.distanceTravelled >= this.maxDistance) {
-      this.active = false;
-    } else if (this.isHitscan) {
-      // Hitscan projectiles update once to hit target, then persist visually
-      this.hitscanTimer -= dt;
-      if (this.hitscanTimer <= 0) {
-        this.active = false;
-      }
-    }
+          // Hitscan: show tracer even on miss
+          if (this.isHitscan) {
+            this.hitscanTimer = this.hitscanDuration;
+          } else {
+            this.active = false;
+          }
+        }
+
+        // Hitscan: fade out tracer after hit or miss
+        if (this.isHitscan && this.hitscanTimer > 0) {
+          this.hitscanTimer -= dt;
+          if (this.hitscanTimer <= 0) {
+            this.active = false;
+          }
+        }
   }
 
   draw(ctx) {

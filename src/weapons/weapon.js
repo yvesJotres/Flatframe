@@ -1,7 +1,7 @@
-import { audioManager } from '../core/audio.js';
+import { audioManager } from '../engine/audio.js';
 import Projectile from './projectile.js';
 
-import { UNITS_PER_METER, HITSCAN_SPEED, SPREAD_RECOVERY_DEG_PER_SEC } from '../core/constants.js';
+import { UNITS_PER_METER, HITSCAN_SPEED, SPREAD_RECOVERY_DEG_PER_SEC } from '../engine/constants.js';
 
 function totalDamage(damage = {}) {
   return Object.values(damage).reduce((sum, value) => sum + value, 0);

@@ -51,23 +51,32 @@ Append `?dev=1` to the URL (or set `localStorage.devMode = true`) to unlock:
 
 ```
 src/
-  core/           # Game loop, input, audio, constants, damage, movement
-  entities/       # Player, enemies, loot, projectiles, health, status
-  weapons/        # Primary, secondary, melee weapon classes + data
-  ui/             # HUD, menus (main, simulacrum, pause)
-  missions/       # Mission definitions, wave logic
-  assets/         # CSS, sound manifest
-tests/            # Unit tests (node --test)
+  game.js         # Entry point: game loop and screen flow
+  engine/         # Input, touch controls, audio, music, constants, movement, map, navigation
+  combat/         # Damage 3.0: damage types, armor, health/shields, scaling, status effects, crits, damage numbers
+  warframe/       # The player's Warframe and weapon switching
+  enemies/        # Enemy base + AI, spawner, registry, and units by faction (grineer/, corpus/, infested/)
+  weapons/        # Weapon, primary, secondary, melee classes and projectiles
+  pickups/        # Loot drops (health, energy, ammo)
+  missions/       # Mission definitions, objectives, map JSON
+  mods/           # Mod system (not wired in yet)
+  data/           # Warframe Public Export data (weapons, mods, warframes) + loader/adapter
+  ui/             # HUD, menus/ (main, pause, star chart, arsenal, profile, settings), simulacrum/
+  tools/          # World Builder
+  assets/         # CSS, icon, sounds
+tests/            # Unit tests (node --test); tests/helpers for shared fixtures
+ref/              # Saved WARFRAME Wiki pages the mechanics are checked against
+mockup/           # Static HTML mockups
 ```
 
 ## Weapon System
 
 - **Primary**: Braton, Grakata (auto-rifles)
 - **Secondary**: Lato (pistol)
-- **Melee**: Skana (sword), Heat Dagger, Sheev (daggers)
+- **Melee**: Skana (sword)
 - Melee combos scale cooldown and damage (1.25x at 20 hits, 1.5x at 40)
 - Heavy attacks consume combo counter for burst damage
-- Daggers have distinct stab SFX; swords use swing SFX
+- Daggers have distinct stab SFX; swords use swing SFX (no daggers in the data yet)
 
 ## Downed State
 
@@ -88,7 +97,7 @@ Manifest-driven (`src/assets/sounds/manifest.js`). Uses procedural fallbacks for
 npm test
 ```
 
-53 tests covering melee mechanics, bleedout/revive, enemy AI, loot, audio, and weapon switching.
+106 tests covering melee mechanics, bleedout/revive, enemy AI (behavior + LOS + movement), loot, audio, weapon switching, damage numbers, and mission scenarios.
 
 ## License
 

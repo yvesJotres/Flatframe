@@ -2,14 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0a0a14" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <title>Flatframe - 2D Shooter</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
   <link rel="stylesheet" href="src/assets/style.css" />
+  <!-- Loading screen styles are inline so it shows before anything else loads -->
+  <style>
+    #loading-screen {
+      position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 10px;
+      background: radial-gradient(ellipse at 30% 20%, #0d0d1a 0%, #06060e 40%, #020205 100%);
+      color: #f0e8e0; font-family: "Segoe UI", Roboto, system-ui, sans-serif;
+      transition: opacity 0.45s ease; user-select: none;
+    }
+    #loading-screen.done { opacity: 0; pointer-events: none; }
+    #loading-screen .ls-title { font-size: clamp(36px, 9vh, 64px); font-weight: 700; letter-spacing: 2px; }
+    #loading-screen .ls-sub { color: #ff6b35; font-size: 14px; letter-spacing: 4px; margin-top: -6px; }
+    #loading-screen .ls-bar { width: min(360px, 70vw); height: 3px; margin-top: 28px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+    #loading-screen .ls-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff6b35, #ffd78a); transition: width 0.3s ease; }
+    #loading-screen .ls-status { color: #9090b0; font-size: 12px; letter-spacing: 1px; min-height: 16px; }
+    #loading-screen .ls-error { color: #ff5b5b; font-size: 13px; max-width: 80vw; text-align: center; }
+    #loading-screen .ls-corner { position: absolute; width: 60px; height: 60px; border-color: rgba(255,107,53,0.3); border-style: solid; border-width: 0; }
+    #loading-screen .tl { top: 30px; left: 30px; border-top-width: 2px; border-left-width: 2px; }
+    #loading-screen .tr { top: 30px; right: 30px; border-top-width: 2px; border-right-width: 2px; }
+    #loading-screen .bl { bottom: 30px; left: 30px; border-bottom-width: 2px; border-left-width: 2px; }
+    #loading-screen .br { bottom: 30px; right: 30px; border-bottom-width: 2px; border-right-width: 2px; }
+  </style>
 </head>
 <body>
+  <div id="loading-screen" role="status" aria-live="polite">
+    <span class="ls-corner tl"></span><span class="ls-corner tr"></span>
+    <span class="ls-corner bl"></span><span class="ls-corner br"></span>
+    <div class="ls-title">FLATFRAME</div>
+    <div class="ls-sub">ORIGIN SYSTEM</div>
+    <div class="ls-bar"><div class="ls-fill"></div></div>
+    <div class="ls-status">Loading game files…</div>
+  </div>
+  <script>
+    // Progress API for game.js; module downloads have no progress events, so creep toward 35% meanwhile
+    (function () {
+      var el = document.getElementById('loading-screen');
+      var fill = el.querySelector('.ls-fill'), status = el.querySelector('.ls-status');
+      var shown = performance.now(), progress = 0;
+      function set(p, text) { progress = Math.max(progress, p); fill.style.width = (progress * 100) + '%'; if (text) status.textContent = text; }
+      var creep = setInterval(function () { if (progress < 0.35) set(progress + 0.02); }, 120);
+      window.loadingScreen = {
+        set: set,
+        done: function () {
+          clearInterval(creep); set(1, 'Ready');
+          // Stay up briefly so a fast load does not just flash
+          setTimeout(function () { el.classList.add('done'); setTimeout(function () { el.remove(); }, 500); },
+            Math.max(250, 700 - (performance.now() - shown)));
+        },
+        fail: function (msg) {
+          clearInterval(creep); status.textContent = 'Failed to load';
+          var e = document.createElement('div'); e.className = 'ls-error'; e.textContent = msg + ' — try reloading.'; el.appendChild(e);
+        }
+      };
+      window.addEventListener('error', function (e) { if (document.getElementById('loading-screen') && !el.classList.contains('done')) window.loadingScreen.fail(e.message || 'Unknown error'); });
+      window.addEventListener('unhandledrejection', function (e) { if (!el.classList.contains('done')) window.loadingScreen.fail(String(e.reason && e.reason.message || e.reason)); });
+    })();
+  </script>
   <div id="game-container">
-    <canvas id="gameCanvas"></canvas>
+      <canvas id="gameCanvas"></canvas>
+      <div id="damage-numbers-layer"></div>
 
     <div id="hud">
       <!-- Top-left: objective (mission) -->
@@ -44,6 +103,18 @@
               <div class="ammo-counts">
                 <span id="ammo-display">45</span>
                 <span id="reserve-display">/ 540</span>
+              </div>
+              <div id="melee-panel" class="hidden">
+                <div class="melee-combo">
+                  <span id="combo-mult">1.0x</span>
+                  <span id="combo-hits">0 HITS</span>
+                </div>
+                <div class="melee-bar" title="Next combo tier"><div id="combo-tier-fill"></div></div>
+                <div class="melee-bar decay" title="Combo timer"><div id="combo-decay-fill"></div></div>
+                <div class="melee-states">
+                  <span id="heavy-state" class="chip">HEAVY</span>
+                  <span id="parry-state" class="chip">PARRY</span>
+                </div>
               </div>
               <div id="weapon-display" class="ammo-weapon">BRATON [30]</div>
             </div>

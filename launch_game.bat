@@ -1,20 +1,26 @@
 @echo off
 REM ------------------------------------------------
-REM Launch Flatframe (npm)
+REM Launch Flatframe: starts the game server and opens it in the browser.
+REM Phones can join via the links printed below.
 REM ------------------------------------------------
-
-REM 1. Change to the project folder
+title Flatframe server
 cd /d "%~dp0"
-echo Changed directory to: %cd%
+
+echo Flatframe is starting...
+echo.
+echo   This PC:          http://localhost:8080
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4"') do (
+  for /f "tokens=* delims= " %%b in ("%%a") do echo   Phone / network:  http://%%b:8080
+)
+echo.
+echo Keep this window open while playing. Close it to stop the server.
+echo ------------------------------------------------
 echo.
 
-REM 2. Run the npm script
-REM Removed the && so that 'pause' runs even if npm fails
-npm start
+REM live-server opens the browser itself; host 0.0.0.0 lets phones connect
+call npx live-server --port=8080 --host=0.0.0.0
 
-REM 3. This will now stay open so you can read the error
 echo.
 echo ------------------------------------------------
-echo Process finished or crashed.
+echo Server stopped or crashed.
 pause
-exit

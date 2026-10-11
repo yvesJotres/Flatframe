@@ -8,6 +8,15 @@
   --stroke: rgba(255, 255, 255, 0.12);
   --text: #ffffff;
   --text-dim: #9aa0b4;
+
+  /* Warframe Damage Numbers colors */
+  --damage-normal: #ffffff;
+  --damage-shield: #01d8ff;
+  --damage-crit: #ffff00;
+  --damage-crit-orange: #fe6c09;
+  --damage-crit-red: #fe0000;
+  --damage-ability: #b201fe;
+  --damage-invulnerable: #585858;
 }
 
 * {
@@ -34,6 +43,7 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh; /* visible height on mobile, excluding the browser bars */
 }
 
 canvas {
@@ -63,21 +73,21 @@ canvas {
 }
 
 .top-left {
-  top: 36px;
-  left: 36px;
+  top: 30px;
+  left: 30px;
   width: 296px;
   text-align: left;
 }
 
 .top-right {
-  top: 36px;
-  right: 36px;
+  top: 30px;
+  right: 30px;
   text-align: right;
   width: 400px;
 }
 
 .top-center {
-  top: 36px;
+  top: 30px;
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
@@ -85,14 +95,14 @@ canvas {
 }
 
 .bottom-right {
-  right: 36px;
-  bottom: 36px;
+  right: 30px;
+  bottom: 30px;
   text-align: right;
 }
 
 .bottom-left {
-  left: 36px;
-  bottom: 36px;
+  left: 30px;
+  bottom: 30px;
   font-size: 11px;
   color: var(--text-dim);
   opacity: 0.75;
@@ -102,8 +112,8 @@ canvas {
 /* ------------------------------------------------------------------ Vitals (Warframe style) */
 
 .vital-values-row {
+  column-gap: 10px;
   display: flex;
-  gap: 0;
   width: 200px;
     justify-content: flex-end;
     margin-bottom: 4px;
@@ -361,3 +371,170 @@ canvas {
 .hidden {
   display: none !important;
 }
+
+/* -------------------------------------------------------- Damage Numbers Layer */
+#damage-numbers-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200; /* above canvas, below HUD */
+  overflow: visible;
+}
+
+.damage-number {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 0 1px rgba(0, 0, 0, 0.7);
+  will-change: transform, opacity;
+  white-space: nowrap;
+}
+
+/* ---- Touch controls (mobile / Android) ---- */
+html, body { touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+#touch-controls { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+#touch-controls.hidden { display: none; }
+#touch-controls .tc-stick {
+  position: absolute; bottom: calc(24px + env(safe-area-inset-bottom)); width: 140px; height: 140px;
+  border-radius: 50%; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.25);
+  pointer-events: auto; touch-action: none;
+}
+#touch-controls .tc-left { left: calc(24px + env(safe-area-inset-left)); }
+#touch-controls .tc-right { right: calc(24px + env(safe-area-inset-right)); }
+#touch-controls .tc-knob {
+  position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px;
+  border-radius: 50%; background: rgba(255,255,255,0.35);
+}
+#touch-controls .tc-buttons {
+  position: absolute; right: calc(180px + env(safe-area-inset-right)); bottom: calc(24px + env(safe-area-inset-bottom));
+  display: grid; grid-template-columns: repeat(3, 58px); gap: 8px; pointer-events: auto;
+}
+#touch-controls button {
+  height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.45); color: #fff; font: 600 11px sans-serif; letter-spacing: 0.5px;
+  touch-action: none; pointer-events: auto;
+}
+#touch-controls button.active { background: rgba(255,255,255,0.35); }
+#touch-controls .tc-pause {
+  position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: 48px;
+}
+@media (max-width: 700px) {
+  #touch-controls .tc-stick { width: 110px; height: 110px; }
+  #touch-controls .tc-buttons { right: calc(140px + env(safe-area-inset-right)); grid-template-columns: repeat(3, 50px); gap: 6px; }
+  #touch-controls button { height: 38px; font-size: 10px; }
+}
+#rotate-prompt {
+  display: none; position: fixed; inset: 0; z-index: 100; flex-direction: column; gap: 14px;
+  align-items: center; justify-content: center; background: #0a0a14; color: #f0e8e0;
+  font: 600 18px "Segoe UI", Roboto, system-ui, sans-serif; text-align: center; padding: 24px;
+}
+#rotate-prompt .rp-icon { font-size: 64px; color: #ff6b35; }
+#rotate-prompt .rp-sub { font-size: 13px; font-weight: 400; color: #9090b0; letter-spacing: 1px; }
+/* Shown when held upright, and after a triple-tap exit until the player is back in landscape */
+@media (orientation: portrait) { body.touch-device #rotate-prompt { display: flex; } }
+body.touch-device.landscape-released #rotate-prompt { display: flex; }
+/* Shared close button (src/ui/menus/back_button.js): Windows-style × in the top-right corner */
+#menu-close {
+  position: fixed; z-index: 60;
+  top: var(--edge-top, var(--edge)); right: calc(var(--edge) + env(safe-area-inset-right));
+  width: 34px; height: 34px; padding: 0; border-radius: 4px;
+  border: 1px solid rgba(255,107,53,0.5); background: rgba(10,10,20,0.85); color: #ffd78a;
+  font: 600 16px "Segoe UI", Roboto, system-ui, sans-serif; line-height: 1;
+  cursor: pointer; touch-action: manipulation;
+}
+#menu-close:hover { background: rgba(255,107,53,0.25); color: #fff; }
+#menu-close:active { background: rgba(255,107,53,0.4); }
+#menu-close.hidden { display: none; }
+/* The arena HUD's top-right block moves down so the × does not cover it */
+body.has-close .top-right { top: calc(var(--edge) + 44px); }
+
+/* -------------------------------------------------------- Melee HUD */
+#melee-panel { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+#melee-panel.hidden { display: none; }
+.ammo-counts.hidden { display: none; }
+.melee-combo { display: flex; align-items: baseline; gap: 10px; }
+#combo-mult {
+  font-size: 4rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
+  color: var(--text); transition: color 0.15s;
+}
+#combo-mult.boosted { color: #ffd78a; text-shadow: 0 0 12px rgba(255, 170, 60, 0.6); }
+#combo-hits { color: var(--text-dim); font-size: 1.25rem; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+.melee-bar { width: 200px; height: 4px; background: rgba(255, 255, 255, 0.12); border-radius: 2px; overflow: hidden; }
+.melee-bar > div { height: 100%; width: 0; background: #ff9a3c; transition: width 0.1s linear; }
+.melee-bar.decay { height: 2px; }
+.melee-bar.decay > div { background: var(--text-dim); transition: none; }
+.melee-states { display: flex; gap: 6px; }
+.melee-states .chip { opacity: 0.35; transition: opacity 0.1s, color 0.1s, border-color 0.1s; }
+#heavy-state.ready { opacity: 1; color: #ffd78a; border-color: rgba(255, 170, 60, 0.6); }
+#parry-state.active { opacity: 1; color: var(--shield); border-color: var(--shield); }
+#parry-state.perfect { color: #fff; background: rgba(127, 227, 255, 0.35); }
+
+/* ---- Short screens (phones in landscape): shrink the DOM HUD to match the canvas --ui-scale */
+@media (max-height: 599px) {
+  #hud, #revive-panel { zoom: var(--ui-scale, 1); }
+  #touch-controls .tc-stick { width: 104px; height: 104px; }
+  #touch-controls .tc-knob { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
+  #touch-controls .tc-buttons { right: calc(132px + env(safe-area-inset-right)); grid-template-columns: repeat(3, 50px); gap: 6px; }
+  #touch-controls button { height: 36px; font-size: 10px; }
+}
+
+/* ---- One edge margin (the corner-bracket line) for everything that sits against a screen edge */
+:root {
+  /* = SCREEN_EDGE (30 canvas px) in menu_style.js: the corner-bracket line. The canvas is drawn
+     at 1/--ui-scale on short screens, so 30 canvas px is 30 * --ui-scale CSS px. */
+  --edge: calc(30px * var(--ui-scale, 1));
+  --stick: 140px;
+}
+@media (max-width: 700px) { :root { --stick: 110px; } }
+@media (max-height: 599px) { :root { --stick: 104px; } }
+
+body.touch-device {
+  --edge-top: calc(var(--edge) + env(safe-area-inset-top));
+  --edge-right: calc(var(--edge) + env(safe-area-inset-right));
+  --edge-bottom: calc(var(--edge) + env(safe-area-inset-bottom));
+  --edge-left: calc(var(--edge) + env(safe-area-inset-left));
+}
+
+/* Thumb controls and buttons (not zoomed) */
+#touch-controls .tc-stick { bottom: var(--edge-bottom); width: var(--stick); height: var(--stick); }
+#touch-controls .tc-left { left: var(--edge-left); }
+#touch-controls .tc-right { right: var(--edge-right); }
+#touch-controls .tc-buttons { bottom: var(--edge-bottom); right: calc(var(--edge-right) + var(--stick) + var(--edge)); }
+#touch-controls .tc-pause { top: var(--edge-top); }
+
+/* HUD corners: the HUD is zoomed by --ui-scale, so divide to land on the same edge margin */
+body.touch-device .hud-region.bottom-left { display: none; }          /* dev read-out */
+body.touch-device .top-left { top: calc(var(--edge-top) / var(--ui-scale, 1)); left: calc(var(--edge-left) / var(--ui-scale, 1)); }
+body.touch-device .top-right { top: calc(var(--edge-top) / var(--ui-scale, 1)); right: calc(var(--edge-right) / var(--ui-scale, 1)); }
+body.touch-device #ammo-panel { bottom: auto; top: calc(130px / var(--ui-scale, 1)); right: calc(var(--edge-right) / var(--ui-scale, 1)); }
+body.touch-device #ammo-display { font-size: 2.75rem; }
+body.touch-device #combo-mult { font-size: 2.5rem; }
+
+/* ---- Player settings (src/engine/settings.js, applied in game.js) */
+#hud { opacity: var(--hud-opacity, 1); }
+body.hide-debug .hud-region.bottom-left { display: none; }
+#touch-controls { opacity: var(--touch-opacity, 0.8); }
+#touch-controls .tc-stick { width: calc(var(--stick) * var(--touch-scale, 1)); height: calc(var(--stick) * var(--touch-scale, 1)); }
+#touch-controls .tc-buttons {
+  right: calc(var(--edge-right, var(--edge)) + var(--stick) * var(--touch-scale, 1) + var(--edge));
+  transform: scale(var(--touch-scale, 1)); transform-origin: bottom right;
+}
+
+
+/* Simulacrum spawner open: canvas (spawner UI) above the HUD, which stays visible underneath */
+body.sim-menu-open #gameCanvas { position: relative; z-index: 2; }
+body.sim-menu-open #hud { z-index: 1; }
+
+/* Simulacrum on touch: SPAWNER button at bottom-centre (pause button is hidden there) */
+#touch-controls .tc-spawner { display: none; position: absolute; bottom: var(--edge-bottom); left: 50%; transform: translateX(-50%); height: 40px; min-width: 110px; pointer-events: auto; touch-action: none; }
+#touch-controls.sim .tc-pause { display: none; }
+#touch-controls.sim .tc-spawner { display: block; }
+#touch-controls.sim-play .tc-buttons { display: grid; }
+#touch-controls:not(.sim-play) .tc-buttons, #touch-controls:not(.sim-play) .tc-stick { display: none; }
+#touch-controls.sim-play .tc-stick { display: block; }
+
+/* Prompt dismissed by a tap on first load: the game plays in portrait too (it returns after a triple-tap release) */
+body.rotate-dismissed:not(.landscape-released) #rotate-prompt { display: none !important; }

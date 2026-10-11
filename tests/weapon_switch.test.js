@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import Player from '../src/entities/player.js';
+import Player from '../src/warframe/player.js';
 
 // Mock InputHandler and AudioManager
 class MockInput {

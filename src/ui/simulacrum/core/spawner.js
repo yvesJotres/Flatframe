@@ -1,4 +1,4 @@
-import { ENTITY_REGISTRY } from '../../../entities/registry.js';
+import { ENTITY_REGISTRY } from '../../../enemies/registry.js';
 
 export class SimulacrumSpawner {
   async spawn(faction, type, x, y, level = 1) {

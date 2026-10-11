@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SoundLibrary, soundLibrary } from '../src/core/sound_library.js';
-import { audioManager } from '../src/core/audio.js';
+import { SoundLibrary, soundLibrary } from '../src/engine/sound_library.js';
+import { audioManager } from '../src/engine/audio.js';
 import { SOUND_MANIFEST } from '../src/assets/sounds/manifest.js';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

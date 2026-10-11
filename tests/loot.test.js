@@ -5,7 +5,7 @@ import {
   applyLootPickup,
   LOOT_TYPES,
   DEFAULT_LOOT_WEIGHTS,
-} from '../src/entities/loot.js';
+} from '../src/pickups/loot.js';
 
 // A dead enemy to roll against (shape matches what game.js passes).
 const corpse = { x: 100, y: 100 };

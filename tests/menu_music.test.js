@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createMenuMusic } from '../src/core/menu_music.js';
+import { createMenuMusic } from '../src/engine/menu_music.js';
 
 // Fake audio backend: records plays, returns stoppable handles.
 function fakeAudio({ failFirst = 0 } = {}) {

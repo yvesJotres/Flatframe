@@ -1,0 +1,98 @@
+[
+  {
+    "uniqueName": "/Lotus/Upgrades/Mods/Elemental/Fire/HeatedChargeMod",
+    "name": "Heated Charge",
+    "polarity": "madurai",
+    "rarity": "Rare",
+    "codexSecret": false,
+    "baseDrain": 7,
+    "fusionLimit": 10,
+    "compatName": "Primary",
+    "type": "Rifle Mod",
+    "levelStats": [
+      {
+        "stats": [
+          "+15% Heat Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+30% Heat Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+45% Heat Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+60% Heat Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+75% Heat Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+90% Heat Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+105% Heat Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+120% Heat Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+135% Heat Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+150% Heat Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+165% Heat Damage"
+        ]
+      }
+    ],
+    "imageName": "HeatedCharge.jpg",
+    "category": "Mods",
+    "drops": [
+      {
+        "location": "Nightmare Mode",
+        "type": "Heated Charge",
+        "chance": 5,
+        "rarity": "Rare"
+      }
+    ],
+    "tradable": true,
+    "wikiAvailable": true,
+    "wikiaThumbnail": "https://wiki.warframe.com/images/HeatedChargeMod.png",
+    "wikiaUrl": "https://wiki.warframe.com/w/Heated_Charge",
+    "transmutable": true,
+    "introduced": {
+      "name": "Update 9",
+      "url": "https://wiki.warframe.com/w/Update_9",
+      "aliases": [
+        "9"
+      ],
+      "parent": "9",
+      "date": "2013-07-19"
+    },
+    "releaseDate": "2013-07-19",
+    "isPrime": false,
+    "masterable": true,
+    "masteryReq": 0
+  }
+]

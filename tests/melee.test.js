@@ -1,7 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import MeleeWeapon, { MELEE_WEAPONS, DEFAULT_MELEE } from '../src/weapons/melee_weapon.js';
-import Player from '../src/entities/player.js';
+import Player from '../src/warframe/player.js';
+import { initPrimaryWeapons } from '../src/weapons/primary_weapon.js';
+import { initSecondaryWeapons } from '../src/weapons/secondary_weapon.js';
+import { initMeleeWeapons } from '../src/weapons/melee_weapon.js';
+
+await initPrimaryWeapons();
+await initSecondaryWeapons();
+await initMeleeWeapons();
 
 // MeleeWeapon gates on performance.now(); prime lastMeleeTime into the past
 // so the *first* test swing is never gated by process-start uptime.
@@ -26,13 +33,13 @@ function makeEnemy(x, y, opts = {}) {
 // Player at (0,0) facing +x (angle 0), like a fresh spawn aiming right.
 const playerAtOrigin = () => ({ x: 0, y: 0, angle: 0 });
 
-test('constructor: defaults to Skana, melee category, 120° arc; unknown name throws', () => {
+test('constructor: defaults to Skana, melee category, 45° arc; unknown name throws', () => {
   const w = new MeleeWeapon();
   assert.equal(w.name, 'Skana');
   assert.equal(w.category, 'melee');
   assert.equal(DEFAULT_MELEE, 'Skana');
   assert.ok(MELEE_WEAPONS.Skana, 'Skana registered in MELEE_WEAPONS');
-  assert.ok(Math.abs(w.arc - (120 * Math.PI) / 180) < 1e-9, 'arc converted to radians');
+  assert.ok(Math.abs(w.arc - (45 * Math.PI) / 180) < 1e-9, 'arc converted to radians');
   assert.throws(() => new MeleeWeapon('Lightsaber'), /Unknown melee weapon/);
 });
 
@@ -183,8 +190,10 @@ test('Heavy attack: wiki stats (90 base), 140° arc, consumes combo multiplier t
   const struck = w.heavyAttack(playerAtOrigin(), [enemy]);
   
   assert.equal(struck.length, 1);
-  // heavyBase 90 * comboMult 1.25 * critMult 1 = 112.5
-  assert.equal(enemy.damages[0].total, 112.5);
+  // Warframe export: normal damage {impact:25, puncture:25, slash:50} total=100
+  // heavy_attack.damage_multiplier=2 => heavy damage {impact:50, puncture:50, slash:100} total=200
+  // combo 1.25x => 200 * 1.25 = 250
+  assert.equal(enemy.damages[0].total, 250);
   assert.equal(enemy.damages[0].isHeavy, true);
   assert.equal(w.comboCount, 0, 'combo consumed');
 });
@@ -201,7 +210,7 @@ test('Wiki Alignment: Normal attack stats', () => {
   const w = new MeleeWeapon();
   assert.equal(w.attack.fireRate, 1.0);
   assert.equal(w.attack.range, 2.5);
-  assert.equal(w.attack.critMultiplier, 1.8);
-  assert.equal(w.attack.damage.slash, 45);
+  assert.equal(w.attack.critMultiplier, 2.0);
+  assert.equal(w.attack.damage.slash, 50);
 });
 
