@@ -4,6 +4,7 @@ import { approach } from '../engine/movement.js';
 import { UNITS_PER_METER } from '../engine/constants.js';
 import HealthComponent from '../combat/health.js';
 import StatusManager from '../combat/status_manager.js';
+import { COLORS } from '../assets/colors.js';
 
 export function isTargetAlive(target) {
   if (!target) return false;
@@ -219,6 +220,9 @@ export default class BaseEnemy {
 
   update(dt, target = null, projectiles = [], enemies = []) {
     if (this.health.isDead) return;
+
+    // Update health component (shield gate timer, magnetic, etc.)
+    this.health.update(dt);
 
     // Update alert state machine
     this.updateAlertState(dt);
@@ -609,31 +613,54 @@ export default class BaseEnemy {
   }
 
   drawHealthBar(ctx, color = '#ff6b6b') {
-    const barWidth = this.radius * 2.5;
-    const barHeight = 5;
-    const barY = this.y - this.radius - 16;
+    const barHeight = 6;
+    const barY = this.y - this.radius - 14;
+    
+    // Proportional track widths based on max HP + max Shield (like player HUD)
+    const totalMax = this.maxHp + this.health.maxShield;
+    const healthTrackWidth = totalMax > 0 ? (this.maxHp / totalMax) * (this.radius * 3) : this.radius * 3;
+    const shieldTrackWidth = totalMax > 0 ? (this.health.maxShield / totalMax) * (this.radius * 3) : 0;
+    const barWidth = healthTrackWidth + shieldTrackWidth;
     const barX = this.x - barWidth / 2;
+    const healthBarX = barX;
+    const shieldBarX = barX + healthTrackWidth;
 
-    // Background bar
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(barX, barY, barWidth, barHeight);
-
-    // HP bar on the left
-    const hpWidth = barWidth * (this.hp / this.maxHp);
-    ctx.fillStyle = color;
-    ctx.fillRect(barX, barY, hpWidth, barHeight);
-
-    // Shield bar on the right (if enemy has shields)
-    if (this.health.maxShield > 0 && this.health.shield > 0) {
-      const shieldWidth = barWidth * (this.health.shield / this.health.maxShield);
-      const shieldX = barX + barWidth - shieldWidth;
-      ctx.fillStyle = '#4ade80';
-      ctx.fillRect(shieldX, barY, shieldWidth, barHeight);
+    // Background tracks
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(healthBarX, barY, healthTrackWidth, barHeight);
+    if (shieldTrackWidth > 0) {
+      ctx.fillRect(shieldBarX, barY, shieldTrackWidth, barHeight);
     }
 
+    // Check for armored state (enemy shield gate is NOT total invulnerability - 5% leak)
+    const hasArmor = this.health.hasArmor;
+
+    // Health fill (fills from left, depletes from right)
+    const hpPercent = this.maxHp > 0 ? this.hp / this.maxHp : 0;
+    const hpFillWidth = healthTrackWidth * hpPercent;
+    const hpFillX = healthBarX;
+    
+    if (hasArmor) {
+      ctx.fillStyle = COLORS.ARMOR;
+    } else {
+      ctx.fillStyle = COLORS.HEALTH;
+    }
+    ctx.fillRect(hpFillX, barY, hpFillWidth, barHeight);
+
+    // Shield fill (fills from left, depletes from right)
+    if (this.health.maxShield > 0 && this.health.shield > 0) {
+      const shieldPercent = this.health.shield / this.health.maxShield;
+      const shieldFillWidth = shieldTrackWidth * shieldPercent;
+      const shieldFillX = shieldBarX;
+
+      ctx.fillStyle = COLORS.SHIELDS;
+      ctx.fillRect(shieldFillX, barY, shieldFillWidth, barHeight);
+    }
+
+    // Name + level
     ctx.fillStyle = '#fff';
-    ctx.font = '12px system-ui, sans-serif';
+    ctx.font = '11px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`${this.name} Lv.${this.lvl}`, this.x, barY - 6);
+    ctx.fillText(`${this.name} Lv.${this.lvl}`, this.x, barY - 4);
   }
 }

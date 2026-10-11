@@ -1,6 +1,8 @@
 // Loot drop system — enemies drop pickups on death.
 // Types: health, primary_ammo, secondary_ammo, energy
 
+import { LOOT } from '../assets/colors.js';
+
 export const LOOT_TYPES = {
   HEALTH: 'health',
   PRIMARY_AMMO: 'primary_ammo',
@@ -20,10 +22,10 @@ export const DEFAULT_LOOT_WEIGHTS = {
 };
 
 const LOOT_COLORS = {
-  [LOOT_TYPES.HEALTH]: '#ff4444',
-  [LOOT_TYPES.PRIMARY_AMMO]: '#44aaff',
-  [LOOT_TYPES.SECONDARY_AMMO]: '#ffaa44',
-  [LOOT_TYPES.ENERGY]: '#44ff88',
+  [LOOT_TYPES.HEALTH]: LOOT.HEALTH,
+  [LOOT_TYPES.PRIMARY_AMMO]: LOOT.PRIMARY_AMMO,
+  [LOOT_TYPES.SECONDARY_AMMO]: LOOT.SECONDARY_AMMO,
+  [LOOT_TYPES.ENERGY]: LOOT.ENERGY,
 };
 
 const LOOT_LABELS = {
