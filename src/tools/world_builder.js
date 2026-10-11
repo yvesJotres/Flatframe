@@ -113,8 +113,17 @@ function getMousePos(e) {
   return { x: (e.clientX - rect.left) / camera.zoom + camera.x, y: (e.clientY - rect.top) / camera.zoom + camera.y, screenX: e.clientX, screenY: e.clientY };
 }
 
+let isPanning = false;
+let panLast = null;
+
 canvas.addEventListener('mousedown', e => {
   const mouse = getMousePos(e);
+  if (e.button === 1) { // Middle mouse — pan (Blender)
+    e.preventDefault();
+    isPanning = true;
+    panLast = { x: e.clientX, y: e.clientY };
+    return;
+  }
   if (e.button === 0) {
     if (currentTool === 'wall') startPlacingWall(mouse);
     else if (currentTool === 'spawn') placeSpawn(mouse);
@@ -130,23 +139,44 @@ canvas.addEventListener('mousedown', e => {
 canvas.addEventListener('mousemove', e => {
   const mouse = getMousePos(e);
   updateMouseDisplay(mouse);
+  if (isPanning && panLast) {
+    camera.x -= (e.clientX - panLast.x) / camera.zoom;
+    camera.y -= (e.clientY - panLast.y) / camera.zoom;
+    panLast = { x: e.clientX, y: e.clientY };
+    redraw(); return;
+  }
   if (isPlacing && currentTool === 'wall') updatePreviewWall(mouse);
   if (currentTool === 'wall' && !isPlacing) updatePreviewWall(mouse);
   if (selectedEntity && e.buttons === 1 && currentTool === 'select') dragSelected(mouse);
 });
 
-canvas.addEventListener('mouseup', e => { if (e.button === 0 && isPlacing && currentTool === 'wall') finishPlacingWall(); _dragSaved = false; });
+canvas.addEventListener('mouseup', e => {
+  if (e.button === 1) { isPanning = false; panLast = null; return; }
+  if (e.button === 0 && isPlacing && currentTool === 'wall') finishPlacingWall();
+  _dragSaved = false;
+});
 
+canvas.addEventListener('mouseleave', () => { isPanning = false; panLast = null; });
+
+// { passive: false } is required so preventDefault() actually suppresses browser scroll/zoom
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
   if (e.altKey) {
-    const step = Math.PI / 8; // 22.5°
+    // Alt + scroll = rotate wall preview (22.5° steps)
+    const step = Math.PI / 8;
     previewRotation = (previewRotation + (e.deltaY > 0 ? step : -step) + Math.PI * 2) % (Math.PI * 2);
     redraw();
     return;
   }
-  const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-  const newZoom = Math.max(0.25, Math.min(4, camera.zoom * zoomFactor));
+  if (e.shiftKey) {
+    // Shift + scroll = pan horizontal (Blender)
+    camera.x += (e.deltaY > 0 ? 30 : -30) / camera.zoom;
+    redraw();
+    return;
+  }
+  // Scroll = zoom centered on cursor (Blender)
+  const zoomFactor = e.deltaY > 0 ? 0.85 : 1 / 0.85;
+  const newZoom = Math.max(0.1, Math.min(8, camera.zoom * zoomFactor));
   const rect = canvas.getBoundingClientRect();
   const mouseX = (e.clientX - rect.left) / camera.zoom + camera.x;
   const mouseY = (e.clientY - rect.top) / camera.zoom + camera.y;
@@ -154,7 +184,7 @@ canvas.addEventListener('wheel', e => {
   camera.y = mouseY - (mouseY - camera.y) * (newZoom / camera.zoom);
   camera.zoom = newZoom;
   redraw();
-});
+}, { passive: false });
 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
