@@ -182,8 +182,13 @@ function updatePreviewWall(mouse) {
   redraw(); 
 }
 function finishPlacingWall() {
-  if (previewWall && previewWall.length > GRID_SIZE * 0.5) { saveUndo(); walls.push({ ...previewWall, id: Date.now() + Math.random() }); updateStats(); }
-  isPlacing = false; placeStart = null; previewWall = null; previewRotation = 0; redraw(); 
+  // If the drag was too short (just a click), place a fixed-length wall instead
+  if (previewWall && previewWall.length <= GRID_SIZE * 0.5) {
+    const lenM = parseInt(wallLengthInput.value, 10) || WALL_LENGTH_M;
+    previewWall = { ...previewWall, length: lenM * GRID_SIZE, angle: previewRotation };
+  }
+  if (previewWall && previewWall.length > 0) { saveUndo(); walls.push({ ...previewWall, id: Date.now() + Math.random() }); updateStats(); }
+  isPlacing = false; placeStart = null; previewWall = null; redraw();
 }
 function createWallData(start, end, rotation) {
   let cx, cy, length, angle;
