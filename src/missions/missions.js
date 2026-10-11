@@ -8,12 +8,12 @@ export const MISSIONS = [
   {
     id: 'exterminate',
     name: 'Exterminate',
-    tagline: 'Purge a fixed number of Grineer.',
-    brief: 'Command wants this sector cleared. Lancers keep trickling in from the edges until the quota is met.',
+    tagline: 'Purge a fixed number of Corpus.',
+    brief: 'Command wants this sector cleared. Crewmen keep trickling in from the edges until the quota is met.',
     accent: '#ff9f43',
     icon: 'crosshair',
     objectiveLabel: 'Eliminated',
-    stats: ['Quota: 24 Lancers', 'Up to 5 units on the field', 'Tougher units every 8 kills'],
+    stats: ['Quota: 24 Crewmen', 'Up to 5 units on the field', 'Tougher units every 8 kills'],
 
     // Population
     maxEnemies: 5,

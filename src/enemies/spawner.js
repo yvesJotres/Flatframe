@@ -1,4 +1,5 @@
 import Lancer from './grineer/lancer.js';
+import Crewman from './corpus/crewman.js';
 import { waveSize } from '../missions/missions.js';
 
 // ---- Old-sig exports (matching game.js globals) ----
@@ -23,7 +24,14 @@ export function spawnEnemy(lvl = 1) {
       y = (y + _canvas.height / 2) % (_canvas.height - padding * 2) + padding;
     }
   }
-  const enemy = new Lancer(x, y, { lvl: lvl || 1 });
+
+  let enemy;
+  if (_mission && _mission.id === 'exterminate') {
+    enemy = new Crewman(x, y, { lvl: lvl || 1 });
+  } else {
+    enemy = new Lancer(x, y, { lvl: lvl || 1 });
+  }
+
   // Assign NavMesh to new enemy
   enemy.navMesh = _navMesh;
   _enemies.push(enemy);
