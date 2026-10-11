@@ -3,6 +3,5 @@ node_modules/
 Thumbs.db
 *.log
 .vscode/
-CLAUDE_CODE_TASK.md
 ref/
 mockup/
