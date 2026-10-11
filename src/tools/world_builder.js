@@ -158,33 +158,36 @@ canvas.addEventListener('mouseup', e => {
 
 canvas.addEventListener('mouseleave', () => { isPanning = false; panLast = null; });
 
-// { passive: false } is required so preventDefault() actually suppresses browser scroll/zoom
+// passive:false lets preventDefault() fire synchronously — required for Alt+scroll and zoom
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
+  const dy = e.deltaY;
   if (e.altKey) {
-    // Alt + scroll = rotate wall preview (22.5° steps)
-    const step = Math.PI / 8;
-    previewRotation = (previewRotation + (e.deltaY > 0 ? step : -step) + Math.PI * 2) % (Math.PI * 2);
+    const step = Math.PI / 8; // 22.5° per tick
+    previewRotation = (previewRotation + (dy > 0 ? step : -step) + Math.PI * 2) % (Math.PI * 2);
     redraw();
     return;
   }
   if (e.shiftKey) {
-    // Shift + scroll = pan horizontal (Blender)
-    camera.x += (e.deltaY > 0 ? 30 : -30) / camera.zoom;
+    camera.x += (dy > 0 ? 40 : -40) / camera.zoom;
     redraw();
     return;
   }
-  // Scroll = zoom centered on cursor (Blender)
-  const zoomFactor = e.deltaY > 0 ? 0.85 : 1 / 0.85;
-  const newZoom = Math.max(0.1, Math.min(8, camera.zoom * zoomFactor));
+  // Zoom anchored to cursor: keep the world point under the cursor fixed
+  const newZoom = Math.max(0.1, Math.min(8, camera.zoom * (dy > 0 ? 0.85 : 1 / 0.85)));
   const rect = canvas.getBoundingClientRect();
-  const mouseX = (e.clientX - rect.left) / camera.zoom + camera.x;
-  const mouseY = (e.clientY - rect.top) / camera.zoom + camera.y;
-  camera.x = mouseX - (mouseX - camera.x) * (newZoom / camera.zoom);
-  camera.y = mouseY - (mouseY - camera.y) * (newZoom / camera.zoom);
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  const worldX = sx / camera.zoom + camera.x;
+  const worldY = sy / camera.zoom + camera.y;
   camera.zoom = newZoom;
+  camera.x = worldX - sx / newZoom;
+  camera.y = worldY - sy / newZoom;
   redraw();
 }, { passive: false });
+
+// Block Alt key from triggering browser menu (causes Alt+scroll lag on Windows)
+window.addEventListener('keydown', e => { if (e.key === 'Alt') e.preventDefault(); }, { capture: true });
 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
