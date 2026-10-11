@@ -13,10 +13,6 @@ export class MainMenu {
           { label: 'Profile', action: 'profile' },
           { label: 'Settings', action: 'settings' },
         ];
-    const isDev = new URLSearchParams(window.location.search).has('dev') || localStorage.getItem('devMode');
-    if (isDev) {
-      this.landingOptions.push({ label: 'World Builder', action: 'world-builder' });
-    }
     this.selectedIndex = 0;
     this.lastHoverIndex = -1;
     this.animTime = 0;
@@ -188,7 +184,6 @@ export class MainMenu {
         'Profile': 'Mastery · Stats · Appearance · Syndicates',
         'Settings': 'Graphics · Audio · Controls · Gameplay',
         'Simulacrum': 'Test builds · Practice · No stakes',
-        'World Builder': 'Dev tools · Map editor'
       };
       if (descs[opt.label]) {
         ctx.font = '12px "Segoe UI", Roboto, system-ui, sans-serif';

@@ -41,11 +41,12 @@ Opens the game at `http://localhost:8080` via live-server.
 | Self-Revive (downed) | Hold X (2s) |
 | Pause / Simulacrum Menu | P / Escape |
 
-## Dev Mode
+## Dev Tools
 
-Append `?dev=1` to the URL (or set `localStorage.devMode = true`) to unlock:
-- **World Builder** button in main menu → opens `world_builder.html`
-- **Simulacrum** enemy spawner with mouse controls, spawn modes, level adjustment
+Dev tools live in `dev/` and are opened directly — they are not linked from the game.
+
+- **World Builder** → `http://localhost:8080/dev/world_builder.html` — tile/map editor
+- **Simulacrum** — accessible in-game via the Navigation screen
 
 ## Project Structure
 
