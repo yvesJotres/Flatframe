@@ -9,25 +9,43 @@ const WALL_LENGTH_M = 5;
 const walls = [];
 const spawns = [];
 const undoStack = [];
+const redoStack = [];
+
+function snapshot() {
+  return { walls: walls.map(w => ({ ...w })), spawns: spawns.map(s => ({ ...s })) };
+}
 
 function saveUndo() {
-  undoStack.push({ walls: walls.map(w => ({ ...w })), spawns: spawns.map(s => ({ ...s })) });
+  undoStack.push(snapshot());
   if (undoStack.length > 50) undoStack.shift();
-  updateUndoBtn();
+  redoStack.length = 0;
+  updateHistoryBtns();
+}
+
+function applySnapshot(state) {
+  walls.length = 0; walls.push(...state.walls);
+  spawns.length = 0; spawns.push(...state.spawns);
+  selectedEntity = null;
+  updateStats(); updateHistoryBtns(); redraw();
 }
 
 function undo() {
   if (!undoStack.length) return;
-  const state = undoStack.pop();
-  walls.length = 0; walls.push(...state.walls);
-  spawns.length = 0; spawns.push(...state.spawns);
-  selectedEntity = null;
-  updateStats(); updateUndoBtn(); redraw();
+  redoStack.push(snapshot());
+  applySnapshot(undoStack.pop());
 }
 
-function updateUndoBtn() {
-  const btn = document.getElementById('btn-undo');
-  if (btn) btn.disabled = undoStack.length === 0;
+function redo() {
+  if (!redoStack.length) return;
+  undoStack.push(snapshot());
+  applySnapshot(redoStack.pop());
+}
+
+function updateHistoryBtns() {
+  const u = document.getElementById('btn-undo');
+  const r = document.getElementById('btn-redo');
+  if (u) u.disabled = undoStack.length === 0;
+  if (r) r.disabled = redoStack.length === 0;
 }
 
 let selectedEntity = null;
@@ -81,7 +99,8 @@ gridToggle.addEventListener('click', () => { showGrid = !showGrid; gridToggle.te
 
 window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
-  if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undo(); return; }
+  if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey) && !e.shiftKey) { e.preventDefault(); undo(); return; }
+  if (((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey) && e.shiftKey) || (e.key === 'y' && (e.ctrlKey || e.metaKey))) { e.preventDefault(); redo(); return; }
   if (e.key === 'g' || e.key === 'G') { showGrid = !showGrid; gridToggle.textContent = `Grid: ${showGrid ? 'ON' : 'OFF'} (G)`; redraw(); }
   if (e.key === 'r' && !e.shiftKey) { previewRotation = (previewRotation + Math.PI / 2) % (2 * Math.PI); redraw(); }
   if (e.key === 'R' && e.shiftKey) { previewRotation = 0; }
@@ -143,6 +162,7 @@ contextMenu.addEventListener('click', e => {
 document.addEventListener('click', () => hideContextMenu());
 
 document.getElementById('btn-undo').addEventListener('click', undo);
+document.getElementById('btn-redo').addEventListener('click', redo);
 document.getElementById('btn-save').addEventListener('click', saveToStorage);
 document.getElementById('btn-export').addEventListener('click', exportJSON);
 document.getElementById('btn-load').addEventListener('click', loadFromStorage);
