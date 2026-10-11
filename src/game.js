@@ -570,6 +570,7 @@ function gameLoop(timestamp) {
               requestAnimationFrame(gameLoop);
               return;
             }
+    } // end if (screen === 'main-menu')
 
     if (screen === 'simulacrum') {
       if (inputHandler.isKeyPressed('escape')) {
