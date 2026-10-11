@@ -25,6 +25,60 @@ npm start
 
 Opens the game at `http://localhost:8080` via live-server.
 
+## Installation Guide
+
+### Prerequisites
+- **Node.js 18+** — [Download](https://nodejs.org/) (LTS recommended)
+- **Git** — for cloning the repository
+- **Modern browser** — Chrome, Firefox, Edge, Safari (ES modules, Canvas 2D)
+
+### Install & Run
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/yvesJotres/Flatframe.git
+cd Flatframe
+
+# 2. Install dependencies (dev only: live-server for static hosting)
+npm install
+
+# 3. Start development server
+npm start
+```
+
+The game loads at **http://localhost:8080**.
+
+### Alternative: Run without cloning (GitHub Pages / static hosting)
+The build is pure static ES modules — no bundler required. Deploy the repo root to any static host (GitHub Pages, Netlify, Vercel, Cloudflare Pages) and open `index.html`.
+
+### Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| `npm: command not found` | Install Node.js; restart terminal |
+| Port 8080 in use | Edit `package.json` → `"start": "live-server --port 3000"` |
+| Blank screen / CORS errors | Must run via HTTP server (`live-server`, `npx serve`, `python -m http.server`), **not** `file://` |
+| Audio doesn't play | Click anywhere on page first (browser autoplay policy) |
+| Touch controls not showing | Enable in Settings → Touch Controls = "On" or "Auto" |
+
+### Development
+
+```bash
+# Run unit tests (106 tests)
+npm test
+
+# Open World Builder (map editor)
+# Start server first, then visit:
+http://localhost:8080/dev/world_builder.html
+```
+
+### Project Scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `npm start` | `live-server` | Dev server at :8080 |
+| `npm test` | `node --test` | Run all unit tests |
+
 ## Controls
 
 | Action | Key |
