@@ -120,8 +120,6 @@ src/
   tools/          # World Builder
   assets/         # CSS, icon, sounds
 tests/            # Unit tests (node --test); tests/helpers for shared fixtures
-ref/              # Saved WARFRAME Wiki pages the mechanics are checked against
-mockup/           # Static HTML mockups
 ```
 
 ## Weapon System
