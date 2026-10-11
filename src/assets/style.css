@@ -1,15 +1,19 @@
 /* Flatframe — layout + HUD styling. */
 
 :root {
-  --accent: #4fc3f7;
-  --shield: #7fe3ff;
-  --health: #ff5b5b;
+  /* Core Vitals (from src/assets/colors.js) */
+  --health: #cc2a28;
+  --shield: #01d8ff;
+  --armor: #e0a635;
+
+  /* UI Theme */
+  --accent: #ff6b35;
   --panel: rgba(11, 14, 22, 0.6);
   --stroke: rgba(255, 255, 255, 0.12);
   --text: #ffffff;
   --text-dim: #9aa0b4;
 
-  /* Warframe Damage Numbers colors */
+  /* Damage Numbers colors */
   --damage-normal: #ffffff;
   --damage-shield: #01d8ff;
   --damage-crit: #ffff00;
