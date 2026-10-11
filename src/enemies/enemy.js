@@ -612,35 +612,28 @@ export default class BaseEnemy {
     const barWidth = this.radius * 2.5;
     const barHeight = 5;
     const barY = this.y - this.radius - 16;
+    const barX = this.x - barWidth / 2;
 
-    // Draw shield bar (above HP bar)
-    if (this.health.maxShield > 0 && this.health.shield > 0) {
-      const shieldBarY = barY - 6;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      ctx.fillRect(this.x - barWidth / 2, shieldBarY, barWidth, barHeight);
-      ctx.fillStyle = '#4ade80';
-      ctx.fillRect(
-        this.x - barWidth / 2,
-        shieldBarY,
-        barWidth * (this.health.shield / this.health.maxShield),
-        barHeight
-      );
-    }
-
-    // Draw HP bar
+    // Background bar
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(this.x - barWidth / 2, barY, barWidth, barHeight);
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+
+    // HP bar on the left
+    const hpWidth = barWidth * (this.hp / this.maxHp);
     ctx.fillStyle = color;
-    ctx.fillRect(
-      this.x - barWidth / 2,
-      barY,
-      barWidth * (this.hp / this.maxHp),
-      barHeight
-    );
+    ctx.fillRect(barX, barY, hpWidth, barHeight);
+
+    // Shield bar on the right (if enemy has shields)
+    if (this.health.maxShield > 0 && this.health.shield > 0) {
+      const shieldWidth = barWidth * (this.health.shield / this.health.maxShield);
+      const shieldX = barX + barWidth - shieldWidth;
+      ctx.fillStyle = '#4ade80';
+      ctx.fillRect(shieldX, barY, shieldWidth, barHeight);
+    }
 
     ctx.fillStyle = '#fff';
     ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`${this.name} Lv.${this.lvl}`, this.x, barY - 18);
+    ctx.fillText(`${this.name} Lv.${this.lvl}`, this.x, barY - 6);
   }
 }
