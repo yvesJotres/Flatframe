@@ -566,10 +566,10 @@ function gameLoop(timestamp) {
                 else if (choice.action === 'simulacrum') {
                   startSimulacrum();
                              }
-              mainMenu.draw(ctx, canvas);
-              requestAnimationFrame(gameLoop);
-              return;
             }
+      mainMenu.draw(ctx, canvas);
+      requestAnimationFrame(gameLoop);
+      return;
     } // end if (screen === 'main-menu')
 
     if (screen === 'simulacrum') {
@@ -694,10 +694,10 @@ function gameLoop(timestamp) {
       else if (inputHandler.isKeyPressed('enter') || inputHandler.isMouseClicked()) {
         if (mission) startMission(mission.id);
         else openMainMenu();
-            requestAnimationFrame(gameLoop);
+      }
+      requestAnimationFrame(gameLoop);
       return;
     }
-  }
 
     if (inputHandler.isKeyPressed('escape')) { pauseMenu.missionName = mission?.name ?? ''; pauseMenu.toggle(); }
     hud.setVisible(!pauseMenu.visible); // the pause screen covers the whole view, like the main menu

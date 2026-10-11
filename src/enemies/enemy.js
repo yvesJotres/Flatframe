@@ -612,6 +612,22 @@ export default class BaseEnemy {
     const barWidth = this.radius * 2.5;
     const barHeight = 5;
     const barY = this.y - this.radius - 16;
+
+    // Draw shield bar (above HP bar)
+    if (this.health.maxShield > 0 && this.health.shield > 0) {
+      const shieldBarY = barY - 6;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(this.x - barWidth / 2, shieldBarY, barWidth, barHeight);
+      ctx.fillStyle = '#4ade80';
+      ctx.fillRect(
+        this.x - barWidth / 2,
+        shieldBarY,
+        barWidth * (this.health.shield / this.health.maxShield),
+        barHeight
+      );
+    }
+
+    // Draw HP bar
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillRect(this.x - barWidth / 2, barY, barWidth, barHeight);
     ctx.fillStyle = color;
@@ -625,6 +641,6 @@ export default class BaseEnemy {
     ctx.fillStyle = '#fff';
     ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`${this.name} Lv.${this.lvl}`, this.x, barY - 6);
+    ctx.fillText(`${this.name} Lv.${this.lvl}`, this.x, barY - 18);
   }
 }
