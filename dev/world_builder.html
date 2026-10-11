@@ -4,31 +4,115 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flatframe - World Builder</title>
-  <link rel="stylesheet" href="../src/assets/style.css" />
   <style>
-    body { margin: 0; overflow: hidden; background: #0a0a0c; font-family: system-ui, sans-serif; color: #fff; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; overflow: hidden; background: #0a0a0c; font-family: system-ui, sans-serif; color: #e0e0e0; font-size: 13px; }
     #wb-container { display: flex; height: 100vh; width: 100vw; }
-    #wb-toolbar { width: 280px; background: #111; border-right: 1px solid #222; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-  <style>
-    .wb-section { display: flex; flex-direction: column; gap: 6px; }
-    .wb-section label { font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; }
-    .wb-btn { background: #1e1e22; border: 1px solid #333; color: #e0e0e0; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: border-color 0.15s, background 0.15s; display: flex; align-items: center; gap: 8px; }
-    .wb-btn:hover { border-color: #555; background: #25252a; }
-  </style>
+
+    /* Toolbar */
+    #wb-toolbar { width: 240px; min-width: 240px; background: #111116; border-right: 1px solid #222; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .wb-section { display: flex; flex-direction: column; gap: 5px; }
+    .wb-label { font-size: 10px; text-transform: uppercase; color: #666; letter-spacing: 0.8px; margin-bottom: 2px; }
+    .wb-btn { background: #1e1e26; border: 1px solid #2a2a35; color: #ccc; padding: 7px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; text-align: left; transition: border-color 0.12s, background 0.12s; }
+    .wb-btn:hover { border-color: #444; background: #25252f; color: #fff; }
+    .wb-btn.active { border-color: #4ade80; color: #4ade80; background: #0e1f14; }
+    .wb-btn.danger { border-color: #7f1d1d; color: #f87171; }
+    .wb-btn.danger:hover { background: #2d0a0a; border-color: #ef4444; }
+    .wb-sep { border: none; border-top: 1px solid #1e1e26; margin: 2px 0; }
+    .wb-row { display: flex; gap: 5px; align-items: center; }
+    .wb-row label { flex: 1; color: #888; font-size: 11px; }
+    .wb-row input[type=number] { width: 52px; background: #1a1a22; border: 1px solid #2a2a35; color: #ddd; padding: 4px 6px; border-radius: 3px; font-size: 12px; }
+    .wb-row input[type=checkbox] { width: 14px; height: 14px; accent-color: #4ade80; cursor: pointer; }
+
+    /* Stats bar */
+    #wb-stats { font-size: 11px; color: #666; padding: 4px 0; border-top: 1px solid #1e1e26; margin-top: auto; }
+    #wb-stats span { color: #aaa; }
+    #snap-indicator { color: #4ade80; font-weight: bold; display: none; }
+
+    /* Canvas */
+    #wb-canvas-area { flex: 1; position: relative; overflow: hidden; }
+    #wb-canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+    /* Status bar at bottom of canvas */
+    #wb-status { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 3px 10px; font-size: 11px; color: #666; display: flex; gap: 16px; pointer-events: none; }
+    #wb-status span { color: #999; }
+
+    /* Context menu */
+    #wb-context-menu { position: fixed; background: #18181e; border: 1px solid #333; border-radius: 4px; padding: 4px 0; z-index: 100; display: none; min-width: 120px; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
+    #wb-context-menu .item { padding: 7px 14px; cursor: pointer; font-size: 12px; }
+    #wb-context-menu .item:hover { background: #252530; }
+    #wb-context-menu .item.danger { color: #f87171; }
   </style>
 </head>
 <body>
   <div id="wb-container">
     <div id="wb-toolbar">
+
       <div class="wb-section">
-        <label>Tools</label>
-        <button class="wb-btn active" id="tool-select" data-tool="select">🔍 Select / Move</button>
-        <button class="wb-btn" id="tool-wall" data-tool="wall">🧱 Wall Panel (5m)</button>
-        <button class="wb-btn" id="tool-spawn" data-tool="spawn">👤 Player Spawn</button>
+        <div class="wb-label">Tools</div>
+        <button class="wb-btn active" data-tool="select">🔍 Select / Move</button>
+        <button class="wb-btn" data-tool="wall">🧱 Wall Panel</button>
+        <button class="wb-btn" data-tool="spawn">👤 Player Spawn</button>
+      </div>
+
+      <hr class="wb-sep">
+
+      <div class="wb-section">
+        <div class="wb-label">Wall Options</div>
+        <div class="wb-row">
+          <label>Length (m)</label>
+          <input type="number" id="wall-length" value="5" min="1" max="50" step="1">
+        </div>
+        <button class="wb-btn" id="btn-rotate-90">↻ Rotate 90° (R)</button>
+      </div>
+
+      <hr class="wb-sep">
+
+      <div class="wb-section">
+        <div class="wb-label">Snapping</div>
+        <div class="wb-row">
+          <label>Snap to grid</label>
+          <input type="checkbox" id="snap-enabled" checked>
+        </div>
+        <div class="wb-row">
+          <label>Snap angle</label>
+          <input type="checkbox" id="snap-angle" checked>
+        </div>
+        <button class="wb-btn" id="wb-grid-toggle">Grid: ON (G)</button>
+      </div>
+
+      <hr class="wb-sep">
+
+      <div class="wb-section">
+        <div class="wb-label">File</div>
+        <button class="wb-btn" id="btn-save">💾 Save</button>
+        <button class="wb-btn" id="btn-load">📂 Load</button>
+        <button class="wb-btn" id="btn-export">⬇ Export JSON</button>
+        <button class="wb-btn" id="btn-import">⬆ Import JSON</button>
+        <button class="wb-btn danger" id="btn-clear">🗑 Clear All</button>
+      </div>
+
+      <div id="wb-stats">
+        Walls: <span id="stat-walls">0</span> &nbsp;
+        Spawns: <span id="stat-spawns">0</span> &nbsp;
+        <span id="snap-indicator">⊙ Snapped</span>
       </div>
     </div>
-    <div id="wb-canvas-area"><canvas id="wb-canvas"></canvas></div>
+
+    <div id="wb-canvas-area">
+      <canvas id="wb-canvas"></canvas>
+      <div id="wb-status">
+        World: <span id="mouse-world">—</span> &nbsp;
+        Grid: <span id="mouse-grid">—</span>
+      </div>
+    </div>
   </div>
+
+  <div id="wb-context-menu">
+    <div class="item" data-action="duplicate">Duplicate</div>
+    <div class="item danger" data-action="delete">Delete</div>
+  </div>
+
   <script type="module" src="../src/tools/world_builder.js"></script>
 </body>
 </html>
