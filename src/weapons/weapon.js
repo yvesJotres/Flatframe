@@ -1,5 +1,6 @@
 import { audioManager } from '../engine/audio.js';
 import Projectile from './projectile.js';
+import { weaponDamageMultiplier } from '../mods/mod_effects.js';
 
 import { UNITS_PER_METER, HITSCAN_SPEED, SPREAD_RECOVERY_DEG_PER_SEC } from '../engine/constants.js';
 
@@ -41,6 +42,12 @@ export default class Weapon {
     this.reloading = false;
     this.reloadRemaining = 0;
     this.setAttack(stats.attacks?.normal ?? stats.attack ?? stats);
+    this.modDamageMult = 1; // Set by equipMods() from the mods in the slots
+  }
+
+  // Apply the damage bonus of this weapon's mods (Serration, Hornet Strike, Pressure Point)
+  equipMods(mods) {
+    this.modDamageMult = weaponDamageMultiplier(mods, this.category, this.falloff != null);
   }
 
   setAttack(attack) {
@@ -155,7 +162,7 @@ export default class Weapon {
 
   rollHit(distanceMeters = 0) {
     const crit = Math.random() < this.critChance;
-    const multiplier = (crit ? this.critMultiplier : 1) * falloffMultiplier(this.falloff, distanceMeters);
+    const multiplier = (crit ? this.critMultiplier : 1) * falloffMultiplier(this.falloff, distanceMeters) * this.modDamageMult;
     const impact = (this.damage.impact ?? 0) * multiplier;
     const puncture = (this.damage.puncture ?? 0) * multiplier;
     const slash = (this.damage.slash ?? 0) * multiplier;

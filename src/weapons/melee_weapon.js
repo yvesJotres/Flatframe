@@ -208,12 +208,12 @@ export default class MeleeWeapon extends Weapon {
       // Heavy attack: base damage * combo multiplier, with critical rolls
       const crit = Math.random() < (heavyStats.critChance ?? this.critChance);
       const critMult = crit ? (heavyStats.critMultiplier ?? this.critMultiplier) : 1;
-      const total = heavyBase * multiplier * critMult;
+      const total = heavyBase * multiplier * critMult * this.modDamageMult;
 
       const hit = {
-        impact: (heavyStats.damage?.impact ?? 0) * multiplier * critMult,
-        puncture: (heavyStats.damage?.puncture ?? 0) * multiplier * critMult,
-        slash: (heavyStats.damage?.slash ?? heavyBase) * multiplier * critMult,
+        impact: (heavyStats.damage?.impact ?? 0) * multiplier * critMult * this.modDamageMult,
+        puncture: (heavyStats.damage?.puncture ?? 0) * multiplier * critMult * this.modDamageMult,
+        slash: (heavyStats.damage?.slash ?? heavyBase) * multiplier * critMult * this.modDamageMult,
         heat: 0,
         total,
         crit,

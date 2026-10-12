@@ -150,7 +150,7 @@ export default class Arsenal {
   }
 
   get currentLoadout() {
-    return { ...this.loadout };
+    return { ...this.loadout, mods: this.configs[this.upgradeConfig].mods.filter(Boolean) };
   }
 
   // Read live: the data tables are filled after this module loads
