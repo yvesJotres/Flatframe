@@ -150,7 +150,7 @@ export default class Arsenal {
   }
 
   get currentLoadout() {
-    return { ...this.loadout };
+    return { ...this.loadout, mods: this.configs[this.upgradeConfig].mods.filter(Boolean) };
   }
 
   // Read live: the data tables are filled after this module loads
@@ -344,7 +344,7 @@ export default class Arsenal {
   setModSlot(index, mod) {
     const slot = SLOTS[this.focus];
     const kind = slotKind(slot.id, index);
-    if (mod && !canPlace(mod, kind)) return false;
+    if (mod && !canPlace(mod, kind, slot.id)) return false;
     this.configs[this.upgradeConfig].mods[index] = mod ?? null;
     return true;
   }
@@ -1103,14 +1103,21 @@ export default class Arsenal {
     const sl = U.slots;
     const isWarframe = slot.id === 'warframe';
     const rows = isWarframe ? [2, 4, 4] : [4, 4];
+    const equippedMods = this.configs[this.upgradeConfig].mods;
+    let slotIndex = 0;
     rows.forEach((n, row) => {
       const rowW = n * sl.w + (n - 1) * sl.gap;
       const x0 = sl.x0 + (sl.x1 - sl.x0 - rowW) / 2;
-      for (let c = 0; c < n; c++) {
+      for (let c = 0; c < n; c++, slotIndex++) {
         const r = { x: x0 + c * (sl.w + sl.gap), y: sl.y + row * (sl.h + sl.gap), w: sl.w, h: sl.h };
         this.panel(ctx, r, false, 4);
+        const mod = equippedMods[slotIndex];
         this.diamond(ctx, r.x + r.w - 20, r.y + 20, 8, MENU_COLORS.hint); // polarity (none set yet)
-        if (isWarframe && row === 0) {
+        if (mod) {
+          // An equipped mod: its name and rank in the slot
+          this.text(ctx, mod.name.toUpperCase(), r.x + 12, r.y + r.h / 2 - 6, { size: 13, weight: 'bold', color: MENU_COLORS.title, maxW: r.w - 24 });
+          this.text(ctx, `RANK ${mod.currentRank ?? 0}`, r.x + 12, r.y + r.h / 2 + 12, { size: 12, color: MENU_COLORS.label });
+        } else if (isWarframe && row === 0) {
           const label = c === 0 ? 'AURA' : c === n - 1 ? 'EXILUS' : null;
           if (label) this.text(ctx, label, r.x + r.w / 2, r.y + r.h / 2, { size: 14, weight: 'bold', color: MENU_COLORS.hint, align: 'center' });
         }

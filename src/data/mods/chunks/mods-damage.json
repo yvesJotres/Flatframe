@@ -108,17 +108,12 @@
     "levelStats": [
       {
         "stats": [
-          "+15% Damage"
+          "+20% Damage"
         ]
       },
       {
         "stats": [
-          "+30% Damage"
-        ]
-      },
-      {
-        "stats": [
-          "+45% Damage"
+          "+40% Damage"
         ]
       },
       {
@@ -128,17 +123,12 @@
       },
       {
         "stats": [
-          "+75% Damage"
+          "+80% Damage"
         ]
       },
       {
         "stats": [
-          "+90% Damage"
-        ]
-      },
-      {
-        "stats": [
-          "+105% Damage"
+          "+100% Damage"
         ]
       },
       {
@@ -148,17 +138,27 @@
       },
       {
         "stats": [
-          "+135% Damage"
+          "+140% Damage"
         ]
       },
       {
         "stats": [
-          "+150% Damage"
+          "+160% Damage"
         ]
       },
       {
         "stats": [
-          "+165% Damage"
+          "+180% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+200% Damage"
+        ]
+      },
+      {
+        "stats": [
+          "+220% Damage"
         ]
       }
     ],
@@ -204,17 +204,12 @@
     "levelStats": [
       {
         "stats": [
-          "+15% Damage"
+          "+20% Damage"
         ]
       },
       {
         "stats": [
-          "+30% Damage"
-        ]
-      },
-      {
-        "stats": [
-          "+45% Damage"
+          "+40% Damage"
         ]
       },
       {
@@ -224,37 +219,17 @@
       },
       {
         "stats": [
-          "+75% Damage"
+          "+80% Damage"
         ]
       },
       {
         "stats": [
-          "+90% Damage"
-        ]
-      },
-      {
-        "stats": [
-          "+105% Damage"
+          "+100% Damage"
         ]
       },
       {
         "stats": [
           "+120% Damage"
-        ]
-      },
-      {
-        "stats": [
-          "+135% Damage"
-        ]
-      },
-      {
-        "stats": [
-          "+150% Damage"
-        ]
-      },
-      {
-        "stats": [
-          "+165% Damage"
         ]
       }
     ],

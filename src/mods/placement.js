@@ -24,7 +24,11 @@ export function capacityForRank(rank) {
   return Math.floor(1 + (29 * r) / MAX_RANK);
 }
 
-export function canPlace(mod, kind) {
+// itemType is the item the mod goes on: 'warframe', 'primary', 'secondary' or 'melee'.
+// A mod for one item type (e.g. Serration, a primary mod) never fits another (e.g. a Warframe).
+const ITEM_TYPES = ['warframe', 'primary', 'secondary', 'melee'];
+export function canPlace(mod, kind, itemType = null) {
+  if (itemType && ITEM_TYPES.includes(mod.category) && mod.category !== itemType) return false;
   if (kind === SLOT_KINDS.AURA) return mod.isAura === true;
   if (kind === SLOT_KINDS.EXILUS) return mod.isExilus === true;
   return mod.isAura !== true; // normal slot: Exilus mods are allowed here, Aura mods are not

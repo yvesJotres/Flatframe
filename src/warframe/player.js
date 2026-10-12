@@ -6,6 +6,7 @@ import { damageNumbersManager, getDamageNumberType } from '../combat/damage_numb
 import { approach } from '../engine/movement.js';
 import { audioManager } from '../engine/audio.js';
 import HealthComponent from '../combat/health.js';
+import { healthMultiplier } from '../mods/mod_effects.js';
 import StatusManager from '../combat/status_manager.js';
 import { WeaponSwitchHandler } from './weapon_switch.js';
 import { godMode } from '../debug/cheats.js';
@@ -38,7 +39,7 @@ export default class Player {
 
       // Excalibur stats (Rank 30)
       this.healthComponent = new HealthComponent({
-              maxHp: 370,
+              maxHp: Math.round(370 * healthMultiplier(loadout.mods)),
               maxShield: 370,
               armor: 240,
             }, true);
@@ -73,6 +74,9 @@ export default class Player {
       this.awaitingPulse = 0;
       this.secondaryWeapon = new SecondaryWeapon(loadout.secondary || undefined);
       this.meleeWeapon = new MeleeWeapon(loadout.melee || undefined);
+      this.primaryWeapon.equipMods(loadout.mods);
+      this.secondaryWeapon.equipMods(loadout.mods);
+      this.meleeWeapon.equipMods(loadout.mods);
       this.currentWeapon = this.primaryWeapon;
       this.lastRangedWeapon = this.primaryWeapon;
       this.lastShotTime = 0;
