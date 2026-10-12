@@ -13,9 +13,9 @@ const DEAD_ZONE = 0.25;
 const AIM_DISTANCE = 220;
 
 export function isTouchDevice() {
-  return typeof window !== 'undefined' &&
-    (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) &&
-    window.matchMedia?.('(pointer: coarse)').matches;
+  if (typeof window === 'undefined') return false;
+  // Check for any indication of touch support: maxTouchPoints is most reliable
+  return navigator.maxTouchPoints > 0;
 }
 
 export class TouchControls {
