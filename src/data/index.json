@@ -65,6 +65,28 @@
       ],
       "category": "Melee",
       "chunk": "melee-sword"
+    },
+    {
+      "name": "Sobek",
+      "uniqueName": "/Lotus/Weapons/Grinner/LongGuns/Sobek/SobekWeapon",
+      "type": "Shotgun",
+      "masteryReq": 7,
+      "tags": [
+        "Grineer"
+      ],
+      "category": "Primary",
+      "chunk": "primary-rifle"
+    },
+    {
+      "name": "Cleaver",
+      "uniqueName": "/Lotus/Weapons/Grinner/Melee/Cleaver/CleaverWeapon",
+      "type": "Dual Swords",
+      "masteryReq": 5,
+      "tags": [
+        "Grineer"
+      ],
+      "category": "Melee",
+      "chunk": "melee-sword"
     }
   ],
   "warframes": [

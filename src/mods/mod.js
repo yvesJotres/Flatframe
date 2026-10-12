@@ -150,6 +150,8 @@ export class Mod {
     this.isCorrupted = data.isCorrupted || false;
     this.isAugment = data.isAugment || false;
     this.isSetMod = data.isSetMod || false;
+    this.isAura = data.isAura || false;     // only fits the Aura slot
+    this.isExilus = data.isExilus || false; // fits the Exilus slot and normal slots, not the Aura slot
     this.setName = data.setName || '';
     this.abilityName = data.abilityName || ''; // For augments
     

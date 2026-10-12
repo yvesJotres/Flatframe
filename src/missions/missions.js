@@ -22,6 +22,29 @@ export const MISSIONS = [
     levelPerKills: 8, // Enemy level ticks up every N kills
 
     endless: false,
+    family: 'exterminate',
+    enemyPool: ['crewman'],
+    map: 'exterminate_ship.json',
+  },
+  {
+    id: 'exterminate_e_prime',
+    name: 'Exterminate',
+    tagline: 'Purge 33 Grineer from E Prime.',
+    brief: 'Grineer patrols have taken over the E Prime forest. Thin them out until the quota is met.',
+    accent: '#ff9f43',
+    icon: 'crosshair',
+    objectiveLabel: 'Eliminated',
+    stats: ['Quota: 33 Grineer', 'Up to 5 units on the field', 'Tougher units every 8 kills'],
+
+    // Population
+    maxEnemies: 5,
+    spawnInterval: 1.1,
+    killQuota: 33,
+    levelPerKills: 8,
+
+    endless: false,
+    family: 'exterminate',
+    enemyPool: ['trooper', 'lancer', 'butcher'],
     map: 'exterminate_ship.json',
   },
   {
@@ -97,6 +120,7 @@ export const MISSIONS = [
     maxEnemies: 0,
     spawnInterval: 0,
     killQuota: 0,
+    noCreditReward: true, // sandbox: pays nothing, like Free Roam
 
     endless: true,
     map: 'simulacrum_arena.json',
@@ -108,6 +132,12 @@ export const DEFAULT_MISSION_ID = 'exterminate';
 export function getMission(id) {
   return MISSIONS.find((mission) => mission.id === id) ?? MISSIONS[0];
 }
+
+// Star-chart nodes that need their own mission definition. Anything not listed
+// falls back to the mission type (see LAUNCH_IDS in star_chart.js).
+export const NODE_MISSION_IDS = {
+  'E Prime': 'exterminate_e_prime',
+};
 
 // How many units a single wave of a wave-based mission deploys.
 export function waveSize(mission, wave) {

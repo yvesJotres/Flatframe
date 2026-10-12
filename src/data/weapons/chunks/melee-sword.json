@@ -5,9 +5,9 @@
     "codexSecret": false,
     "description": "Tenno blade. Honor and discipline made manifest.",
     "criticalChance": 0.25,
-    "criticalMultiplier": 2.0,
+    "criticalMultiplier": 2,
     "procChance": 0.25,
-    "fireRate": 1.0,
+    "fireRate": 1,
     "masteryReq": 0,
     "productCategory": "Melee",
     "slot": 3,
@@ -55,9 +55,9 @@
     "attacks": [
       {
         "name": "Normal",
-        "speed": 1.0,
+        "speed": 1,
         "crit_chance": 25,
-        "crit_mult": 2.0,
+        "crit_mult": 2,
         "status_chance": 25,
         "shot_type": "Melee",
         "damage": {
@@ -69,22 +69,28 @@
         "blocking_angle": 45,
         "combo_duration": 3,
         "heavy_attack": {
-          "damage_multiplier": 2.0,
+          "damage_multiplier": 2,
           "wind_up": 0.5,
           "crit_chance": 40,
-          "crit_mult": 3.0
+          "crit_mult": 3
         }
       }
     ],
-    "polarities": ["madurai"],
-    "tags": ["Tenno"],
+    "polarities": [
+      "madurai"
+    ],
+    "tags": [
+      "Tenno"
+    ],
     "exilusPolarity": "madurai",
     "wikiaThumbnail": "",
     "wikiaUrl": "https://wiki.warframe.com/w/Skana",
     "introduced": {
       "name": "Update 7",
       "url": "https://wiki.warframe.com/w/Update_7",
-      "aliases": ["7"],
+      "aliases": [
+        "7"
+      ],
       "parent": "7",
       "date": "2013-06-01"
     },
@@ -99,9 +105,9 @@
     "codexSecret": false,
     "description": "Corpus shock baton. Deals innate Electricity damage.",
     "criticalChance": 0.25,
-    "criticalMultiplier": 2.0,
+    "criticalMultiplier": 2,
     "procChance": 0.25,
-    "fireRate": 1.0,
+    "fireRate": 1,
     "masteryReq": 2,
     "productCategory": "Melee",
     "slot": 3,
@@ -149,9 +155,9 @@
     "attacks": [
       {
         "name": "Normal",
-        "speed": 1.0,
+        "speed": 1,
         "crit_chance": 25,
-        "crit_mult": 2.0,
+        "crit_mult": 2,
         "status_chance": 25,
         "shot_type": "Melee",
         "damage": {
@@ -160,26 +166,32 @@
           "slash": 10,
           "electricity": 30
         },
-        "range": 3.0,
+        "range": 3,
         "blocking_angle": 45,
         "combo_duration": 3,
         "heavy_attack": {
-          "damage_multiplier": 2.0,
+          "damage_multiplier": 2,
           "wind_up": 0.5,
           "crit_chance": 40,
-          "crit_mult": 3.0
+          "crit_mult": 3
         }
       }
     ],
-    "polarities": ["vazarin"],
-    "tags": ["Corpus"],
+    "polarities": [
+      "vazarin"
+    ],
+    "tags": [
+      "Corpus"
+    ],
     "exilusPolarity": "madurai",
     "wikiaThumbnail": "",
     "wikiaUrl": "https://wiki.warframe.com/w/Prova",
     "introduced": {
       "name": "Update 10",
       "url": "https://wiki.warframe.com/w/Update_10",
-      "aliases": ["10"],
+      "aliases": [
+        "10"
+      ],
       "parent": "10",
       "date": "2013-09-13"
     },
@@ -187,5 +199,32 @@
     "releaseDate": "2013-09-13",
     "isPrime": false,
     "masterable": true
+  },
+  {
+    "name": "Cleaver",
+    "uniqueName": "/Lotus/Weapons/Grinner/Melee/Cleaver/CleaverWeapon",
+    "description": "Single cleaver used by Butchers. Damage is the Dual Cleavers normal attack (wiki); a single blade's own value is not published, so this is an approximation.",
+    "type": "Dual Swords",
+    "category": "Melee",
+    "masteryReq": 5,
+    "tags": [
+      "Grineer"
+    ],
+    "attacks": [
+      {
+        "name": "Normal",
+        "speed": 0.833,
+        "crit_chance": 25,
+        "crit_mult": 3,
+        "status_chance": 10,
+        "range": 1.7,
+        "damage": {
+          "impact": 23.55,
+          "puncture": 23.55,
+          "slash": 109.9
+        }
+      }
+    ],
+    "slot": 3
   }
 ]

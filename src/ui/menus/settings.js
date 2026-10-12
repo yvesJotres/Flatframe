@@ -4,7 +4,7 @@
  * Mouse/touch: tap a section, drag a slider, tap a toggle or choice.
  * Keyboard: Q/E or 1-3 switch section, W/S pick a row, A/D adjust, Enter toggles, Esc back.
  */
-import { drawCornerAccents, FONT, MENU_COLORS, SCREEN_EDGE, roundRectPath } from './menu_style.js';
+import { FONT, MENU_COLORS, MENU_SIDE_MARGIN, MENU_TOP_MARGIN, roundRectPath } from './menu_style.js';
 import { drawTopTabs, getTabHitRects, TAB_STYLE } from './top_tabs.js';
 import { settings as store, SETTING_SECTIONS } from '../../engine/settings.js';
 import { audioManager } from '../../engine/audio.js';
@@ -159,13 +159,13 @@ export default class SettingsScreen {
   computeLayout(w, h) {
     const compact = h < 560;
     const top = TAB_STYLE.y + TAB_STYLE.height + (compact ? 14 : 28);
-    const panelW = Math.min(760, w - SCREEN_EDGE * 2);
+    const panelW = Math.min(760, w - MENU_SIDE_MARGIN * 2);
     const x = (w - panelW) / 2;
     const tabH = compact ? 32 : 40;
     const sections = SETTING_SECTIONS.map((_, i) => ({ x: x + i * (panelW / SETTING_SECTIONS.length), y: top, w: panelW / SETTING_SECTIONS.length, h: tabH }));
     const listY = top + tabH + (compact ? 10 : 18);
     const resetH = compact ? 30 : 36;
-    const bottomLimit = h - SCREEN_EDGE - 52 - resetH - 10; // keep clear of the shared back button
+    const bottomLimit = h - MENU_TOP_MARGIN - 52 - resetH - 10; // keep clear of the shared back button
     const rowH = Math.max(30, Math.min(compact ? 36 : 48, (bottomLimit - listY) / this.section.items.length));
     const rows = this.section.items.map((_, i) => ({ x, y: listY + i * rowH, w: panelW, h: rowH - 4 }));
     const controlX = x + panelW * 0.5;
@@ -187,7 +187,6 @@ export default class SettingsScreen {
     ctx.fillRect(0, 0, w, h);
 
     drawTopTabs(ctx, w, 'settings');
-    drawCornerAccents(ctx, w, h);
 
     // Section tabs
     SETTING_SECTIONS.forEach((s, i) => {

@@ -1,4 +1,5 @@
-import { drawSelectedRow, drawCornerAccents } from './menu_style.js';
+import { drawSelectedRow } from './menu_style.js';
+import { drawSquadIcons, drawCurrencyBar, profileHovered, liveSquadRects, liveModeBox } from './top_bar.js';
 import { audioManager } from '../../engine/audio.js';
 import { TOP_TABS, TAB_STYLE, drawTopTabs, getTabHitRects } from './top_tabs.js';
 
@@ -15,6 +16,8 @@ export class MainMenu {
         ];
     this.selectedIndex = 0;
     this.lastHoverIndex = -1;
+    this.profileHover = false; // the pointer is over the profile icon (shows the username)
+    this.onSquad = null; // set by game.js: opens the squad panel under the matchmaking icon
     this.animTime = 0;
     this.logoAnim = 0;
     this.bgOffset = 0;
@@ -59,12 +62,15 @@ export class MainMenu {
       }
 
       const mouse = input.getMousePos ? input.getMousePos() : null;
+      this.profileHover = profileHovered(mouse, this.profileHover);
       if (mouse) {
         const { startY, spacing } = this.landingLayout(canvas.width, canvas.height);
+        // An option counts as hovered only when the pointer is over its row (both across and down)
+        const cx = canvas.width / 2;
         let hovered = -1;
         this.landingOptions.forEach((opt, i) => {
           const y = startY + i * spacing;
-          if (mouse.y > y - 22 && mouse.y < y + 22) {
+          if (Math.abs(mouse.x - cx) < 200 && mouse.y > y - 22 && mouse.y < y + 22) {
             hovered = i;
           }
         });
@@ -75,8 +81,17 @@ export class MainMenu {
           }
         }
         this.lastHoverIndex = hovered;
-        if (input.isMouseClicked()) {
-          return this.landingOptions[this.selectedIndex];
+        // The profile and plus icons open the squad panel; they are checked before the options
+        const clicked = input.isMouseClicked();
+        const squad = liveSquadRects();
+        const over = (r) => mouse.x >= r.x && mouse.x <= r.x + r.w && mouse.y >= r.y && mouse.y <= r.y + r.h;
+        if (clicked && (over(squad.avatar) || over(squad.invite))) {
+          if (this.onSquad) this.onSquad(liveModeBox());
+          return null;
+        }
+        // A click only chooses an option when the pointer is on it
+        if (clicked && hovered !== -1) {
+          return this.landingOptions[hovered];
         }
       }
 
@@ -162,7 +177,7 @@ export class MainMenu {
 
       ctx.font = '12px "Segoe UI", Roboto, system-ui, sans-serif';
       ctx.fillStyle = '#8080a0';
-      ctx.fillText('v1.4.0  |  WARFRAME-INSPIRED', w/2, L.titleY + (L.compact ? 48 : 50));
+      ctx.fillText('v1.6.0  |  WARFRAME-INSPIRED', w/2, L.titleY + (L.compact ? 48 : 50));
 
       const startY = L.startY;
     this.landingOptions.forEach((opt, i) => {
@@ -197,11 +212,10 @@ export class MainMenu {
     ctx.textAlign = 'center';
     ctx.fillText('[W/S] Navigate  [Enter] Select  [Esc] Exit', w/2, h - 16);
 
-    this.drawCornerAccents(ctx, w, h);
-  }
+    // Squad icons, top left, and the currency bar, top right
+    drawSquadIcons(ctx, this.profileHover);
+    drawCurrencyBar(ctx, w);
 
-  drawCornerAccents(ctx, w, h) {
-    drawCornerAccents(ctx, w, h);
   }
 
 

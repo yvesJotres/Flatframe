@@ -1,6 +1,7 @@
 // Canvas pause menu shown when the player presses Esc; styled like the main menu.
 import { audioManager } from '../../engine/audio.js';
-import { FONT, MENU_COLORS, ROW_HALF_WIDTH, ROW_HEIGHT, drawOption, drawCornerAccents } from './menu_style.js';
+import { FONT, MENU_COLORS, ROW_HALF_WIDTH, ROW_HEIGHT, drawOption } from './menu_style.js';
+import { drawSquadIcons, drawCurrencyBar, profileHovered } from './top_bar.js';
 
 export default class PauseMenu {
   constructor() {
@@ -8,6 +9,7 @@ export default class PauseMenu {
     this.options = [
       { label: 'Resume', action: 'resume', description: 'Return to the mission' },
       { label: 'Restart Mission', action: 'restart', description: 'Start this mission over' },
+      { label: 'Settings', action: 'settings', description: 'Audio, interface and controls' },
       { label: 'Abort Mission', action: 'abort', description: 'Leave without rewards', danger: true },
     ];
     this.missionName = '';
@@ -15,6 +17,7 @@ export default class PauseMenu {
     // Cached layout of option bounding boxes, recomputed each draw(), used for mouse hit-testing.
     this.optionBounds = [];
     this.lastHoverIndex = -1; // hover blip only fires when this changes
+    this.profileHover = false; // the pointer is over the profile icon (shows the username)
   }
 
   toggle() {
@@ -48,6 +51,8 @@ export default class PauseMenu {
     if (input.isKeyPressed('arrowdown') || input.isKeyPressed('s')) {
       this.selectedIndex = (this.selectedIndex + 1) % this.options.length;
     }
+
+    this.profileHover = profileHovered(input.mouse, this.profileHover);
 
     // Hover highlight based on mouse position.
     const hoverIndex = this.hitTest(input.mouse.x, input.mouse.y);
@@ -101,6 +106,10 @@ export default class PauseMenu {
     ctx.fillStyle = veil;
     ctx.fillRect(0, 0, w, h);
 
+    // Squad icons top left and the currency bar top right, as on the main menu
+    drawSquadIcons(ctx, this.profileHover);
+    drawCurrencyBar(ctx, w);
+
     // Title block
     const titleY = compact ? 48 : h * 0.22 + 40;
     ctx.textAlign = 'center';
@@ -129,7 +138,6 @@ export default class PauseMenu {
     ctx.textAlign = 'center';
     ctx.fillText('[W/S] Navigate  [Enter] Select  [Esc] Resume', cx, h - 16);
 
-    drawCornerAccents(ctx, w, h);
     ctx.restore();
   }
 }

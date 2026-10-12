@@ -8,6 +8,7 @@ import { audioManager } from '../engine/audio.js';
 import HealthComponent from '../combat/health.js';
 import StatusManager from '../combat/status_manager.js';
 import { WeaponSwitchHandler } from './weapon_switch.js';
+import { godMode } from '../debug/cheats.js';
 
 export default class Player {
   // loadout: { primary, secondary, melee } weapon names from the Arsenal (defaults when omitted)
@@ -31,6 +32,9 @@ export default class Player {
       this.bulletJumpVisualTimer = 0;
 
       this.angle = 0;
+
+      // Test control (the Simulacrum's INVULNERABLE): takes no damage at all
+      this.invulnerable = false;
 
       // Excalibur stats (Rank 30)
       this.healthComponent = new HealthComponent({
@@ -194,7 +198,7 @@ export default class Player {
       this.velocity.x = this.bulletJumpDirection.x * this.bulletJumpSpeed;
       this.velocity.y = this.bulletJumpDirection.y * this.bulletJumpSpeed;
       this.isBulletJumping = true;
-      audioManager.play('swordSlash1', 0.4); // placeholder sound
+      audioManager.play('melee_swing1', 0.4);
     }
 
     // Bullet Jump visual timer
@@ -378,6 +382,7 @@ export default class Player {
   }
 
   takeDamage(damage) {
+    if (godMode.on || this.invulnerable) return 0; // debug god mode (console: godmode) or the Simulacrum's INVULNERABLE
     if (this.isBleedingOut) return 0; // downed players are ignored by enemies
 
     let mitigation = 0;

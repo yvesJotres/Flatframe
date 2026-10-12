@@ -1,5 +1,5 @@
 import { SimulacrumSpawner } from './spawner.js';
-import { FONT, MENU_COLORS, SCREEN_EDGE, roundRectPath } from '../../menus/menu_style.js';
+import { FONT, MENU_COLORS, MENU_SIDE_MARGIN, MENU_TOP_MARGIN, roundRectPath } from '../../menus/menu_style.js';
 
 // Spawner panel for the Simulacrum arena.
 // Left: enemy grid with filters (All / Grineer / Corpus / Infested / Search).
@@ -30,7 +30,9 @@ export class SimulacrumMenu {
     this.selected = new Map();  // key -> count
     this.level = 30;
     this.spawnMode = 0;         // 0 random, 1 near player, 2 east 10m
-    this.pauseAI = false;       // pausing AI also makes the player invulnerable
+    this.pauseAI = false;       // enemies stay still and do not shoot
+    this.invulnerable = false;  // the player cannot die (enemies are unaffected)
+    this.killAllRequested = false; // set by KILL ALL; the game removes every enemy and reads this via takeKillAll()
     this.hover = null;          // { kind, key/id } under the mouse
 
     // Text entry: a hidden input receives typing (desktop keys and the phone keyboard).
@@ -166,8 +168,10 @@ export class SimulacrumMenu {
       case 'level': this.level = Math.max(1, Math.min(150, this.level + hit.delta)); break;
       case 'mode': this.spawnMode = (this.spawnMode + 1) % MODES.length; break;
       case 'pause': this.pauseAI = !this.pauseAI; break;
+      case 'invulnerable': this.invulnerable = !this.invulnerable; break;
       case 'spawn': this.spawnAll(addEnemy, canvas, player); break;
       case 'clear': this.selected.clear(); break;
+      case 'killAll': this.killAllRequested = true; break;
       default: break;
     }
   }
@@ -207,7 +211,7 @@ export class SimulacrumMenu {
     // Full-height panel, flush to the top, bottom and right screen edges
     const panelTop = compact ? 120 : 150;
     const panel = { x: w - panelW, y: 0, w: panelW, h };
-    const gridX = SCREEN_EDGE;
+    const gridX = MENU_SIDE_MARGIN;
     const gridR = panel.x - 20;
     const gridW = gridR - gridX;
 
@@ -249,13 +253,15 @@ export class SimulacrumMenu {
       levelY: controlsY,
       modeY: controlsY + 34,
       pauseY: controlsY + 68,
+      invulnerableY: controlsY + 94,
       spawnY: panel.h - (compact ? 80 : 96),
       clearY: panel.h - (compact ? 44 : 50),
     };
     const btnH = compact ? 30 : 34;
     return {
       w, h, compact, cols, panel, panelW, tabs, cards, rows, ctrl, btnH, rowH, searchY,
-      gridY, gridX, gridR, panelTop, searchBox, footerY: h - SCREEN_EDGE - 4,
+      killAllX: panel.x + 8 + (panel.w - 16 - 6) / 2 + 6, // left edge of KILL ALL in the bottom row (see draw)
+      gridY, gridX, gridR, panelTop, searchBox, footerY: h - MENU_TOP_MARGIN - 4,
     };
   }
 
@@ -282,8 +288,12 @@ export class SimulacrumMenu {
     }
     if (row(L.ctrl.modeY)) return { kind: 'mode' };
     if (row(L.ctrl.pauseY)) return { kind: 'pause' };
+    if (row(L.ctrl.invulnerableY)) return { kind: 'invulnerable' };
     if (y >= L.ctrl.spawnY && y <= L.ctrl.spawnY + L.btnH && x >= P.x + 8 && x <= P.x + P.w - 8) return { kind: 'spawn' };
-    if (y >= L.ctrl.clearY && y <= L.ctrl.clearY + L.btnH && x >= P.x + 8 && x <= P.x + P.w - 8) return { kind: 'clear' };
+    // CLEAR (left half) and KILL ALL (right half) share the bottom row
+    if (y >= L.ctrl.clearY && y <= L.ctrl.clearY + L.btnH && x >= P.x + 8 && x <= P.x + P.w - 8) {
+      return x < L.killAllX ? { kind: 'clear' } : { kind: 'killAll' };
+    }
     return null;
   }
 
@@ -443,15 +453,25 @@ export class SimulacrumMenu {
     ctx.fillStyle = MENU_COLORS.selected;
     ctx.fillText(`${MODES[this.spawnMode]} ›`, P.x + P.w - 14, L.ctrl.modeY + 14);
 
-    // pause AI / invulnerable checkbox
-    this.drawCheckbox(ctx, pad, L.ctrl.pauseY + 14, this.pauseAI, 'PAUSE AI · INVULNERABLE');
+    // pause AI and player invulnerability: two independent checkboxes
+    this.drawCheckbox(ctx, pad, L.ctrl.pauseY + 14, this.pauseAI, 'PAUSE AI');
+    this.drawCheckbox(ctx, pad, L.ctrl.invulnerableY + 14, this.invulnerable, 'INVULNERABLE');
 
     // buttons
     const btnX = P.x + 8, btnW = P.w - 16;
     const canSpawn = this.total > 0;
     this.drawButton(ctx, btnX, L.ctrl.spawnY, btnW, L.btnH,
       canSpawn ? `SPAWN ${this.total}` : 'SPAWN', canSpawn, true);
-    this.drawButton(ctx, btnX, L.ctrl.clearY, btnW, L.btnH, 'CLEAR', this.total > 0, false);
+    const halfW = (btnW - 6) / 2;
+    this.drawButton(ctx, btnX, L.ctrl.clearY, halfW, L.btnH, 'CLEAR', this.total > 0, false);
+    this.drawButton(ctx, L.killAllX, L.ctrl.clearY, halfW, L.btnH, 'KILL ALL', true, false);
+  }
+
+  /** True once after KILL ALL was clicked; the game then removes every enemy. */
+  takeKillAll() {
+    const requested = this.killAllRequested;
+    this.killAllRequested = false;
+    return requested;
   }
 
   drawRowLabel(ctx, x, y, text) {

@@ -1,3 +1,9 @@
+// Sound names for weapons that have their own sound (see src/engine/audio.js).
+// Weapons not listed fall back to the generic 'gunshot'.
+export const WEAPON_SOUNDS = {
+  Braton: 'braton_fire',
+};
+
 // Convert Warframe Public Export weapon → Weapon constructor stats
 export function adaptAttack(wfAttack) {
   const heavy = wfAttack.heavy_attack;
@@ -16,6 +22,9 @@ export function adaptAttack(wfAttack) {
     shotType: (wfAttack.shot_type ?? 'hit-scan').toLowerCase().replace('hitscan', 'hit-scan'),
     range: wfAttack.range ?? 300,
     multishot: wfAttack.multishot ?? 1,
+    falloff: wfAttack.falloff ?? null,
+    minSpread: wfAttack.min_spread ?? 0,
+    maxSpread: wfAttack.max_spread ?? wfAttack.min_spread ?? 0,
     ammoCost: wfAttack.ammo_cost ?? 1,
     punchThrough: wfAttack.punch_through ?? 0,
     // melee
@@ -41,7 +50,7 @@ export function adaptWeapon(wfWeapon) {
     reload: wfWeapon.reload_time ?? wfWeapon.reloadTime ?? 1,
     ammoPickup: wfWeapon.ammoPickup,
     ammoMax: wfWeapon.ammoMax ?? wfWeapon.magazine_size ?? wfWeapon.magazineSize ?? 30,
-    sound: wfWeapon.sound,
+    sound: wfWeapon.sound ?? WEAPON_SOUNDS[wfWeapon.name],
     reloadSound: wfWeapon.reload_sound ?? wfWeapon.reloadSound,
     attack: adaptAttack(primaryAttack),
     attacks: wfWeapon.attacks,

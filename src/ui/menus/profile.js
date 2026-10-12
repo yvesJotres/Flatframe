@@ -1,4 +1,3 @@
-import { drawCornerAccents } from './menu_style.js';
 import { TOP_TABS, TAB_STYLE, drawTopTabs, getTabHitRects } from './top_tabs.js';
 
 export default class ProfileScreen {
@@ -93,7 +92,6 @@ export default class ProfileScreen {
 
     // Top tabs (match navigation)
     this.drawTopTabs(ctx, w);
-    drawCornerAccents(ctx, w, h);
     
     // Profile content
     ctx.save();

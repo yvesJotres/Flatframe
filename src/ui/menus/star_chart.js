@@ -1,22 +1,139 @@
-import { drawCornerAccents, SCREEN_EDGE, FONT, MENU_COLORS, roundRectPath } from './menu_style.js';
-import { getMission } from '../../missions/missions.js';
-import { TOP_TABS, TAB_STYLE, drawTopTabs, getTabHitRects } from './top_tabs.js';
+import { SCREEN_EDGE, MENU_SIDE_MARGIN, MENU_TOP_MARGIN, FONT, MENU_COLORS, roundRectPath, drawProfileAndInvite, drawReturnButton } from './menu_style.js';
+import { getMission, NODE_MISSION_IDS } from '../../missions/missions.js';
+import { user } from '../../user/user_data.js';
+import { getMode } from '../squad.js';
+import { drawCurrencyBar } from './top_bar.js';
+import { audioManager } from '../../engine/audio.js';
+
+// Rough [longitude, latitude] outlines used to draw Earth
+const EARTH_LAND = [
+  [[-168, 66], [-140, 70], [-100, 72], [-80, 70], [-60, 50], [-52, 47], [-70, 42], [-80, 30], [-97, 26], [-83, 15], [-78, 8], [-95, 16], [-110, 24], [-118, 32], [-124, 42], [-130, 55], [-150, 60]], // North America
+  [[-55, 60], [-45, 60], [-20, 70], [-25, 82], [-60, 82], [-72, 76]],                                                                                                                                      // Greenland
+  [[-80, 8], [-62, 10], [-50, 0], [-35, -6], [-40, -22], [-55, -35], [-65, -42], [-70, -55], [-74, -48], [-72, -30], [-70, -18], [-80, -5]],                                                                // South America
+  [[-10, 36], [-9, 44], [0, 50], [5, 58], [20, 70], [40, 68], [40, 50], [28, 41], [15, 38]],                                                                                                               // Europe
+  [[-17, 21], [-6, 35], [10, 37], [32, 31], [43, 12], [51, 12], [40, -10], [35, -25], [20, -35], [12, -18], [8, 4], [-8, 4], [-17, 14]],                                                                   // Africa
+  [[40, 68], [80, 75], [120, 72], [160, 68], [180, 65], [140, 50], [122, 30], [110, 20], [100, 5], [90, 22], [72, 20], [60, 25], [48, 30], [35, 35], [40, 50]],                                           // Asia
+  [[113, -22], [130, -12], [142, -11], [153, -27], [148, -38], [135, -35], [115, -34]],                                                                                                                    // Australia
+];
+const EARTH_DESERTS = [
+  [[-17, 30], [10, 32], [35, 30], [35, 17], [10, 15], [-17, 17]], // Sahara
+  [[36, 30], [55, 25], [58, 17], [44, 13], [36, 22]],            // Arabia
+  [[122, -20], [140, -20], [145, -28], [125, -30]],              // Australian interior
+];
+// [longitude, latitude, half width, half height] in degrees
+const EARTH_CLOUDS = [
+  [-120, 40, 22, 5], [-60, 15, 18, 4], [-20, 50, 24, 5], [20, -5, 20, 4], [60, 35, 22, 5],
+  [100, 10, 18, 4], [140, -15, 22, 5], [170, 45, 20, 4], [-150, -20, 20, 4], [-40, -40, 24, 5],
+];
+
+// Adds points along each edge (about every 6 degrees), so outlines curve when they are drawn on the globe
+function densify(points, step = 6) {
+  const out = [];
+  points.forEach((a, i) => {
+    const b = points[(i + 1) % points.length];
+    const n = Math.max(1, Math.ceil(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])) / step));
+    for (let s = 0; s < n; s++) out.push([a[0] + ((b[0] - a[0]) * s) / n, a[1] + ((b[1] - a[1]) * s) / n]);
+  });
+  return out;
+}
+const EARTH_LAND_DENSE = EARTH_LAND.map((p) => densify(p));
+const EARTH_DESERTS_DENSE = EARTH_DESERTS.map((p) => densify(p));
+const EARTH_NORTH_CAP = densify([[-180, 74], [180, 74], [180, 90], [-180, 90]]);
+const EARTH_SOUTH_CAP = densify([[-180, -68], [180, -68], [180, -90], [-180, -90]]);
 
 const PLANET_ICONS = { Mercury: '☿', Venus: '♀', Earth: '♁', Mars: '♂', Phobos: '◆', Ceres: '⚳', Jupiter: '♃', Europa: '❄', Saturn: '♄', Uranus: '♅', Neptune: '♆', Pluto: '♇', Sedna: '⯲', Eris: '⯰', Void: '◆', Lua: '☾', 'Kuva Fortress': '⛨' };
 const MISSION_ICONS = { Exterminate: '✦', Defense: '◆', Survival: '▲', Capture: '●', Spy: '■', Sabotage: '◆', Interception: '◆', 'Mobile Defense': '◆', 'Dark Sector Defense': '◆' };
 const FACTION_COLORS = { grineer: '#e85d2a', corpus: '#3a8fce', infested: '#7ab800', corrupted: '#e8e8f0', sentient: '#ff2a8a' };
 
-const STAR_CHART = [
+export const STAR_CHART = [
   { name: 'Earth', faction: 'grineer', angle: 0, distance: 0.5, nodes: [ 
-    { name: 'Everest', type: 'Exterminate', level: '1-5', pos: { x: -0.3, y: -0.2 } }, 
-    { name: 'Mariana', type: 'Defense', level: '5-10', pos: { x: 0.25, y: -0.35 } }, 
-    { name: 'Scotia', type: 'Survival', level: '10-15', pos: { x: 0.4, y: 0.15 } },
-    { name: 'Cervantes', type: 'Capture', level: '3-5', pos: { x: -0.4, y: 0.3 } },
-    { name: 'Tikal', type: 'Dark Sector Defense', level: '5-15', faction: 'infested', pos: { x: 0.1, y: 0.4 } }
+    // pos is where the mission sits on the planet, as a fraction of its radius from the centre
+    { name: 'E Prime', type: 'Exterminate', level: '1-3', pos: { x: -0.88, y: -0.08 } },
+    { name: 'Mariana', type: 'Exterminate', level: '1-3', pos: { x: -0.69, y: -0.45 } },
+    { name: 'Gaia', type: 'Interception', level: '1-6', pos: { x: -0.24, y: 0.21 } },
+    { name: 'Lith', type: 'Defense', level: '1-6', pos: { x: -0.39, y: -0.77 } },
+    { name: 'Erpo', type: 'Mobile Defense', level: '1-6', pos: { x: 1.02, y: 0.55 } },
+    { name: 'Everest', type: 'Excavation', level: '1-6', pos: { x: 0.45, y: -0.31 } },
+    { name: 'Mantle', type: 'Capture', level: '2-4', pos: { x: -0.45, y: -0.20 } },
+    { name: 'Cambria', type: 'Spy', level: '2-4', pos: { x: -0.55, y: 0.62 } },
+    { name: 'Eurasia', type: 'Mobile Defense', level: '3-5', pos: { x: 0.13, y: -0.85 } },
+    { name: 'Pacific', type: 'Rescue', level: '3-6', pos: { x: 0.68, y: 1.00 } },
+    { name: 'Cervantes', type: 'Sabotage', level: '4-6', pos: { x: 0.90, y: -0.07 } },
+    { name: "Saya's Visions", type: 'Shrine Defense', level: '5-15', faction: 'infested', pos: { x: 0.06, y: -0.02 } },
+    { name: 'Coba', type: 'Dark Sector Defense', level: '6-16', faction: 'infested', pos: { x: 0.78, y: -0.43 } },
+    { name: 'Tikal', type: 'Dark Sector Excavation', level: '6-16', faction: 'infested', pos: { x: 0.14, y: 0.24 } },
+    { name: 'Plains of Eidolon', type: 'Open World', level: '10-30', pos: { x: 0.04, y: -0.55 } },
+    { name: 'Oro', type: 'Assassination', level: '20-25', pos: { x: 0.47, y: 0.52 } },
+    { name: 'Cetus', type: 'Hub', level: '0-0', pos: { x: -0.22, y: -0.34 } },
   ] }
 ];
 
 const JUNCTIONS = [];
+
+// Mission types the game can start, and the id each one has in the missions data
+const LAUNCH_IDS = {
+  'Exterminate': 'exterminate',
+  'Defense': 'defense',
+  'Survival': 'survival',
+  'Capture': 'capture',
+  'Sabotage': 'sabotage',
+  'Interception': 'interception',
+  'Mobile Defense': 'mobile_defense',
+  'Dark Sector Defense': 'dark_sector_defense'
+};
+
+// The mission id a star-chart node launches: a node-specific one if it has one, else its type's
+function launchIdFor(mission) {
+  return NODE_MISSION_IDS[mission.name] ?? LAUNCH_IDS[mission.type];
+}
+
+// Nodes floating in the sky: not tied to a planet, always open. x and y are fractions of the screen.
+export const SKY_NODES = [
+  { label: 'SIMULACRUM', action: 'simulacrum', x: 0.68, y: 0.3 },
+];
+
+// Earth routes: each is a chain of mission names, in the order the route runs
+export const EARTH_ROUTES = [
+  ['E Prime', 'Mariana', 'Lith', 'Eurasia'],
+  ['Mariana', 'Mantle', 'Cetus', "Saya's Visions"],
+  ['Cetus', 'Plains of Eidolon', 'Everest', 'Cervantes', 'Erpo', 'Oro'],
+  ['Coba', 'Everest'],
+  ['Mantle', 'Gaia', 'Pacific'],
+  ['Cambria', 'Gaia'],
+  ['Tikal', 'Oro'],
+];
+
+// Missions a route links directly to `name`. Hubs are passed through (they are always open and never
+// "played"), so a mission past a hub is still linked. Routes are two-way.
+function linkedMissions(planet, name) {
+  const typeOf = (n) => planet.nodes.find((m) => m.name === n)?.type;
+  const adjacent = (n) => {
+    const out = [];
+    for (const route of EARTH_ROUTES) {
+      route.forEach((m, i) => {
+        if (m !== n) return;
+        if (i > 0) out.push(route[i - 1]);
+        if (i < route.length - 1) out.push(route[i + 1]);
+      });
+    }
+    return out;
+  };
+  const linked = new Set();
+  const seen = new Set([name]);
+  const queue = [name];
+  while (queue.length) {
+    for (const next of adjacent(queue.shift())) {
+      if (seen.has(next)) continue;
+      seen.add(next);
+      if (typeOf(next) === 'Hub') queue.push(next);
+      else linked.add(next);
+    }
+  }
+  return linked;
+}
+
+// Seconds from selecting a mission to starting it
+const START_COUNTDOWN = 5;
 
 export default class Navigation {
   constructor(onLaunch) {
@@ -27,6 +144,10 @@ export default class Navigation {
     this.open = false;
     this.selectedPlanet = null;
     this.selectedMission = null;
+    this.startPaused = false; // the start bar's pause / play toggle
+    this.editor = null; // dev only: the layout editor, set by src/debug/layout_editor.js (absent in release)
+    this.countdown = START_COUNTDOWN; // seconds left before the mission starts
+    this.countdownFor = null; // the mission the countdown is running for
     this.hoveredPlanet = null;
     this.hoveredMission = null;
     this.animTime = 0;
@@ -34,42 +155,31 @@ export default class Navigation {
     this.panelAlpha = 0;
     this.targetPanelAlpha = 0;
     this.activeTab = 'navigation';
-    this.completedMissions = new Set(JSON.parse(localStorage.getItem('fm_completed') || '[]'));
-    this.unlockedPlanets = new Set(['Earth']);
+    this.onSquad = null; // set by game.js: opens the squad panel under the squad-mode icon (anchor = that icon's box)
     this.loadProgress();
   }
 
+  // Unlocked planets belong to the active user; Earth is always open (single planet mode)
   loadProgress() {
-    try {
-      const data = JSON.parse(localStorage.getItem('fm_nav_progress') || '{}');
-      this.completedMissions = new Set(data.completed || []);
-      const savedUnlocked = new Set(data.unlocked || []);
-      // Earth-only mode: only restore Earth if it was unlocked, otherwise default to Earth
-      if (savedUnlocked.has('Earth')) {
-        this.unlockedPlanets = new Set(['Earth']);
-      } else {
-        this.unlockedPlanets = new Set(['Earth']);
-      }
-    } catch {}
+    this.unlockedPlanets = new Set(['Earth', ...user.get('unlockedPlanets')]);
   }
 
   saveProgress() {
-    localStorage.setItem('fm_nav_progress', JSON.stringify({
-      completed: [...this.completedMissions],
-      unlocked: [...this.unlockedPlanets]
-    }));
+    user.set('unlockedPlanets', [...this.unlockedPlanets]);
   }
 
   isPlanetUnlocked(planetName) {
     return this.unlockedPlanets.has(planetName);
   }
 
+  // Completed nodes belong to the active user (src/user/user_data.js), so each account has its own progress
   isMissionCompleted(planetName, missionName) {
-    return this.completedMissions.has(`${planetName}:${missionName}`);
+    return user.get('completedNodes').includes(`${planetName}:${missionName}`);
   }
 
   completeMission(planetName, missionName) {
-    this.completedMissions.add(`${planetName}:${missionName}`);
+    const key = `${planetName}:${missionName}`;
+    user.set('completedNodes', [...new Set([...user.get('completedNodes'), key])]);
     this.checkPlanetUnlock(planetName);
     this.saveProgress();
   }
@@ -79,6 +189,7 @@ export default class Navigation {
   }
 
   openScreen() {
+    this.loadProgress(); // the active user may have changed since the chart was built
     // Every route into the star chart needs the canvas for drawing and hit-testing
     if (!this.canvas) this.handleResize(document.getElementById('gameCanvas'));
     this.open = true;
@@ -96,7 +207,7 @@ export default class Navigation {
   // Mission panel geometry, shared by drawing and hit-testing; shrinks to fit short (phone) screens
   panelGeom(planet) {
     const W = this.canvas.width, H = this.canvas.height;
-    const w = 340, x = W - w - SCREEN_EDGE; // right edge on the corner-bracket line
+    const w = 340, x = W - w - MENU_SIDE_MARGIN;
     const y = H < 500 ? 76 : 60;
     const h = Math.min(400, H - y - 8);
     const compact = h < 400;
@@ -113,9 +224,56 @@ export default class Navigation {
     this.ctx = canvas.getContext('2d');
   }
 
+  // Where the big planet sits: centred, a little low, like the reference. Everything on it scales with its radius.
+  planetLayout(w = this.canvas.width, h = this.canvas.height) {
+    const r = Math.min(h * 0.30, w * 0.18);
+    return { cx: w * 0.5, cy: h * 0.52, r, k: r / 324 }; // k is 1 at 1080p
+  }
+
+  // Width of a mission's label on the planet, so the label can be clicked as well as the marker
+  nodeLabelWidth(mission, k) {
+    const ctx = this.ctx;
+    const text = mission.name.toUpperCase();
+    if (!ctx) return text.length * 16 * k;
+    ctx.save();
+    ctx.font = `bold ${22 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+    const w = ctx.measureText(text).width + text.length * 2 * k;
+    ctx.restore();
+    return w;
+  }
+
+  // The mission under a screen point (marker or label), or null
+  missionAt(planet, x, y) {
+    const { cx, cy, r, k } = this.planetLayout();
+    for (const mission of planet.nodes) {
+      // Locked missions cannot be hovered or clicked (layout edit can still move them)
+      if (!this.editor?.isOn() && !this.isMissionUnlocked(planet, mission)) continue;
+      const pos = mission.pos || { x: 0, y: 0 };
+      const mx = cx + pos.x * r, my = cy + pos.y * r;
+      const reach = 24 * k;
+      if (x >= mx - reach && x <= mx + reach + 10 * k + this.nodeLabelWidth(mission, k) && Math.abs(y - my) <= reach) return mission;
+    }
+    return null;
+  }
+
   update(dt, input) {
     if (!this.open) return;
     this.animTime += dt;
+
+    // The start countdown runs while a mission is selected and not paused
+    if (this.selectedMission !== this.countdownFor) {
+      this.countdownFor = this.selectedMission;
+      this.countdown = START_COUNTDOWN;
+    }
+    const sb = this.startBar();
+    if (sb && !this.startPaused && !this.isMissionCompleted(sb.planet.name, sb.mission.name) && this.countdown > 0) {
+      const before = Math.ceil(this.countdown);
+      this.countdown = Math.max(0, this.countdown - dt);
+      // Tick each time the displayed number changes (4, 3, 2, 1); the launch itself is the last beat.
+      if (Math.ceil(this.countdown) < before && this.countdown > 0) audioManager.play('countdown_tick', 0.6);
+      // The countdown stops at zero and stays there until another mission is selected
+      if (this.countdown <= 0) this.launchMission(sb.planet, sb.mission);
+    }
     this.panelAlpha += (this.targetPanelAlpha - this.panelAlpha) * 0.15;
     
     if (input.isPressed('enter')) {
@@ -138,166 +296,163 @@ export default class Navigation {
     }
   }
 
+  // BACK in the bottom-right corner, the same button and place as on the Arsenal screen
+  backRect(w, h) {
+    const bw = 140, bh = 40;
+    return { x: w - 96 - bw, y: h - 73 - bh / 2, w: bw, h: bh };
+  }
+
+  drawBackButton(ctx, w, h) {
+    drawReturnButton(ctx, this.backRect(w, h), !!this.backHover);
+  }
+
   handleClick(x, y) {
     if (!this.open || !this.canvas) return false;
-    
-    const cx = this.canvas.width / 2;
-    const cy = this.canvas.height / 2;
-    const scale = Math.min(this.canvas.width, this.canvas.height) * 0.42;
-    const w = this.canvas?.width ?? 1280;
-    
-    // Top tabs click handling - use universal module
-    const hitRects = getTabHitRects(w);
-    for (const rect of hitRects) {
-      if (x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height) {
-        this.activeTab = rect.id;
-        if (this.onTabSwitch) this.onTabSwitch(this.activeTab);
-        return true;
-      }
-    }
+    const w = this.canvas.width;
 
-    const sb = this.simulacrumButton(w);
-    if (x >= sb.x && x <= sb.x + sb.w && y >= sb.y && y <= sb.y + sb.h) {
-      if (this.onSimulacrum) this.onSimulacrum();
+    // Layout edit (dev only): the editor takes every click while it is on
+    if (this.editor?.isOn()) return this.editor.click(this, x, y);
+
+    // Sky nodes: open their screen when clicked
+    const skyNode = this.skyNodeAt(x, y);
+    if (skyNode) {
+      if (skyNode.action === 'simulacrum' && this.onSimulacrum) this.onSimulacrum();
       return true;
     }
 
-    if (this.selectedPlanet) {
-      const planet = STAR_CHART.find(p => p.name === this.selectedPlanet);
-      if (!planet) return true;
+    // BACK closes the navigation screen, as Escape does
+    const back = this.backRect(w, this.canvas.height);
+    if (x >= back.x && x <= back.x + back.w && y >= back.y && y <= back.y + back.h) {
+      this.closeScreen();
+      if (this.onClose) this.onClose();
+      return true;
+    }
 
-      // Check mission nodes around planet - Earth is drawn at center (cx, cy)
-      const missionScale = scale * 0.6;
-      const planetX = cx;
-      const planetY = cy;
-      
-      for (const mission of planet.nodes) {
-        const pos = mission.pos || { x: 0, y: 0 };
-        const mx = planetX + pos.x * missionScale;
-        const my = planetY + pos.y * missionScale;
-        const nodeR = 28; // generous hit area for touch
-        if (Math.hypot(x - mx, y - my) < nodeR) {
-          if (this.isMissionCompleted(planet.name, mission.name)) return true;
-          if (this.selectedMission === mission.name) {
-            this.launchMission(planet, mission);
-          } else {
-            this.selectedMission = mission.name;
-            this.targetPanelAlpha = 1;
-          }
-          return true;
-        }
-      }
+    // Profile icon and invite button both open the squad panel
+    const sq = this.squadButtons();
+    const inBox = (r) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+    // The matchmaking icon (sq.mode) is not clickable: its list shows on hover
+    if (inBox(sq.profile) || inBox(sq.invite)) {
+      if (this.onSquad) this.onSquad(sq.mode);
+      return true;
+    }
 
-      const G = this.panelGeom(planet);
-      const panelW = G.w, panelX = G.x, panelY = G.y, itemH = G.itemH, startY = G.startY;
 
-      const btnY = G.btnY;
-      if (this.selectedMission && x >= panelX + 16 && x <= panelX + panelW - 16 && y >= btnY && y <= btnY + G.btnH) {
-        const mission = planet.nodes.find(m => m.name === this.selectedMission);
-        if (mission && !this.isMissionCompleted(planet.name, mission.name)) this.launchMission(planet, mission);
+    // Top-left bar: X cancels the selection, the rest of the bar launches the mission
+    const startInfo = this.startBar();
+    if (startInfo) {
+      const { close, bar, toggle } = startInfo;
+      if (x >= toggle.x && x <= toggle.x + toggle.w && y >= toggle.y && y <= toggle.y + toggle.h) {
+        this.startPaused = !this.startPaused;
         return true;
       }
-
-      if (x >= panelX && x <= panelX + panelW && y >= startY) {
-        const idx = Math.floor((y - startY) / itemH);
-        if (idx >= 0 && idx < planet.nodes.length && y < btnY) {
-          const mission = planet.nodes[idx];
-          if (this.isMissionCompleted(planet.name, mission.name)) return true;
-          if (this.selectedMission === mission.name) {
-            this.launchMission(planet, mission);
-          } else {
-            this.selectedMission = mission.name;
-            this.targetPanelAlpha = 1;
-          }
-          return true;
-        }
-      }
-
-      if (x < panelX || x > panelX + panelW || y < panelY || y > panelY + G.h) {
-        this.selectedPlanet = null;
+      if (x >= close.x && x <= close.x + close.w && y >= close.y && y <= close.y + close.h) {
+        this.selectedMission = null;
         this.targetPanelAlpha = 0;
+        return true;
       }
+      if (x >= bar.x && x <= bar.x + bar.w && y >= bar.y && y <= bar.y + bar.h) {
+        // Paused: the start waits until play is pressed again
+        if (!this.startPaused && !this.isMissionCompleted(startInfo.planet.name, startInfo.mission.name)) this.launchMission(startInfo.planet, startInfo.mission);
+        return true;
+      }
+    }
+
+    // The mission card (for the selected or hovered mission) launches the mission when clicked
+    const active = this.activeCard();
+    if (active && this.hitCard(this.cardRect(active.mission), x, y)) {
+      if (!this.isMissionCompleted(active.planet.name, active.mission.name)) this.launchMission(active.planet, active.mission);
       return true;
     }
 
+    // Missions on the planet's surface: the marker or its name. First click selects, second click launches.
     for (const planet of STAR_CHART) {
       if (!this.isPlanetUnlocked(planet.name)) continue;
-      // Earth drawn at center
-      const px = cx;
-      const py = cy;
-      const dist = Math.hypot(x - px, y - py);
-      if (dist < 68) {  // planet radius + hover padding
+      const mission = this.missionAt(planet, x, y);
+      if (!mission) continue;
+      this.selectedPlanet = planet.name;
+      if (this.isMissionCompleted(planet.name, mission.name)) return true;
+      if (this.selectedMission === mission.name) {
+        this.launchMission(planet, mission);
+      } else {
+        this.selectedMission = mission.name;
+        this.targetPanelAlpha = 1;
+      }
+      return true;
+    }
+
+    // The planet itself selects it
+    const { cx, cy, r } = this.planetLayout();
+    for (const planet of STAR_CHART) {
+      if (!this.isPlanetUnlocked(planet.name)) continue;
+      if (Math.hypot(x - cx, y - cy) < r) {
         this.selectedPlanet = planet.name;
         this.selectedMission = null;
         this.targetPanelAlpha = 0.5;
         return true;
       }
     }
+
+    // Clicking empty space clears the selection
+    if (this.selectedMission || this.selectedPlanet) {
+      this.selectedMission = null;
+      this.selectedPlanet = null;
+      this.targetPanelAlpha = 0;
+      return true;
+    }
     return false;
   }
 
   handleMove(x, y) {
     if (!this.open || !this.canvas) return;
-    const cx = this.canvas.width / 2;
-    const cy = this.canvas.height / 2;
-    const scale = Math.min(this.canvas.width, this.canvas.height) * 0.42;
-
+    // Layout edit (dev only): a dragged mission follows the pointer
+    if (this.editor?.move(this, x, y)) return;
+    const back = this.backRect(this.canvas.width, this.canvas.height);
+    this.backHover = x >= back.x && x <= back.x + back.w && y >= back.y && y <= back.y + back.h;
     this.hoveredPlanet = null;
     this.hoveredMission = null;
-
-    if (this.selectedPlanet) {
-      const planet = STAR_CHART.find(p => p.name === this.selectedPlanet);
-      if (planet) {
-        // Check mission nodes around planet - Earth drawn at center
-        const missionScale = scale * 0.6;
-        const planetX = cx;
-        const planetY = cy;
-        for (const mission of planet.nodes) {
-          const pos = mission.pos || { x: 0, y: 0 };
-          const mx = planetX + pos.x * missionScale;
-          const my = planetY + pos.y * missionScale;
-          const nodeR = 28; // generous hit area for touch
-          if (Math.hypot(x - mx, y - my) < nodeR) {
-            this.hoveredMission = mission.name;
-            return;
-          }
-        }
-
-        const G = this.panelGeom(planet);
-        const panelW = G.w, panelX = G.x, startY = G.startY, itemH = G.itemH;
-        if (x >= panelX && x <= panelX + panelW && y >= startY && y < G.btnY) {
-          const idx = Math.floor((y - startY) / itemH);
-          if (idx >= 0 && idx < planet.nodes.length) {
-            this.hoveredMission = planet.nodes[idx].name;
-          }
-        }
-      }
-    } else {
-      for (const planet of STAR_CHART) {
-        if (!this.isPlanetUnlocked(planet.name)) continue;
-        // Earth drawn at center
-        const px = cx;
-        const py = cy;
-        if (Math.hypot(x - px, y - py) < 68) {
-          this.hoveredPlanet = planet.name;
-          break;
-        }
+    this.hoveredSky = this.skyNodeAt(x, y)?.label ?? null;
+    for (const planet of STAR_CHART) {
+      if (!this.isPlanetUnlocked(planet.name)) continue;
+      const mission = this.missionAt(planet, x, y);
+      if (mission) {
+        this.hoveredMission = mission.name;
+        return;
       }
     }
+    const { cx, cy, r } = this.planetLayout();
+    if (Math.hypot(x - cx, y - cy) < r) this.hoveredPlanet = 'Earth';
+  }
+
+  // The mission whose card is showing: the hovered one, otherwise the selected one
+  activeCard() {
+    // In layout edit the hover card is hidden, so the markers can be seen while dragging
+    const name = (this.editor?.isOn() ? null : this.hoveredMission) ?? this.selectedMission;
+    if (!name) return null;
+    for (const planet of STAR_CHART) {
+      const mission = planet.nodes.find((m) => m.name === name);
+      if (mission) return { planet, mission };
+    }
+    return null;
+  }
+
+  // Where a mission's card sits: just below its marker, kept on screen
+  cardRect(mission) {
+    const { cx, cy, r, k } = this.planetLayout();
+    const pos = mission.pos || { x: 0, y: 0 };
+    const mx = cx + pos.x * r, my = cy + pos.y * r;
+    const w = 300 * k, imgH = 150 * k, bodyH = 150 * k;
+    const x = Math.min(Math.max(8, mx - 40 * k), this.canvas.width - w - 8);
+    const y = Math.min(my + 26 * k, this.canvas.height - (imgH + bodyH) - 8);
+    return { x, y, w, imgH, bodyH, h: imgH + bodyH, k };
+  }
+
+  hitCard(card, x, y) {
+    return x >= card.x && x <= card.x + card.w && y >= card.y && y <= card.y + card.h;
   }
 
   launchMission(planet, mission) {
-    const typeToId = {
-      'Exterminate': 'exterminate',
-      'Defense': 'defense',
-      'Survival': 'survival',
-      'Capture': 'capture',
-      'Sabotage': 'sabotage',
-      'Interception': 'interception',
-      'Mobile Defense': 'mobile_defense',
-      'Dark Sector Defense': 'dark_sector_defense'
-    };
-    const missionId = typeToId[mission.type];
+    const missionId = launchIdFor(mission);
     const missionDef = getMission(missionId);
     if (missionDef && this.onLaunch) {
       this.onLaunch({
@@ -317,16 +472,23 @@ export default class Navigation {
     this.ctx = ctx;
     const w = ctx.canvas.width;
     const h = ctx.canvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
+    const { cx, cy } = this.planetLayout(w, h);
     const scale = Math.min(w, h) * 0.42;
 
     this.drawSpaceBackground(w, h);
+    this.drawDestinations(w, h);
+    this.drawSkyNodes(w, h);
     this.drawOrbitRings(cx, cy, scale);
     this.drawConnectionLines(cx, cy, scale);
     this.drawJunctions(cx, cy, scale);
     this.drawPlanets(cx, cy, scale);
+    this.drawRoutes();
     this.drawDetailPanel(cx, cy, scale);
+    this.drawStartBar();
+    this.drawSquadButtons();
+    drawCurrencyBar(ctx, w);
+    this.drawBackButton(ctx, w, h);
+    this.editor?.drawLabel(ctx, h);
     this.drawUI(w, h);
   }
 
@@ -348,6 +510,37 @@ export default class Navigation {
     n2.addColorStop(0, 'rgba(58,143,206,0.02)'); n2.addColorStop(1, 'transparent');
     this.ctx.fillStyle = n2; this.ctx.fillRect(0, 0, w, h);
     this.ctx.restore();
+  }
+
+  // Smooth routes through the missions on Earth. Each route is a list of mission names in order.
+  // The curve runs through every mission with no corners. A segment that leads to a locked mission is dashed.
+  drawRoutes() {
+    const { cx, cy, r, k } = this.planetLayout();
+    const earth = STAR_CHART.find((p) => p.name === 'Earth');
+    if (!earth) return;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,215,138,0.5)';
+    ctx.lineWidth = 1.5 * k;
+    ctx.lineCap = 'round';
+    for (const route of EARTH_ROUTES) {
+      const nodes = route.map((name) => earth.nodes.find((n) => n.name === name)).filter(Boolean);
+      if (nodes.length < 2) continue;
+      const pts = nodes.map((n) => ({ x: cx + n.pos.x * r, y: cy + n.pos.y * r }));
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+        const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+        const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+        ctx.setLineDash(this.isMissionUnlocked(earth, nodes[i + 1]) ? [] : [4 * k, 5 * k]);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.bezierCurveTo(c1x, c1y, c2x, c2y, p2.x, p2.y);
+        ctx.stroke();
+      }
+    }
+    ctx.setLineDash([]);
+    ctx.lineCap = 'butt';
+    ctx.restore();
   }
 
   drawOrbitRings(cx, cy, scale) {
@@ -377,9 +570,9 @@ export default class Navigation {
       // Earth at center for single planet view
       const x = cx;
       const y = cy;
-      const isHovered = this.hoveredPlanet === planet.name;
       const isSelected = this.selectedPlanet === planet.name;
-      const r = 60 + (isHovered || isSelected ? 8 : 0);
+      const { r: baseR, k } = this.planetLayout();
+      const r = baseR; // the planet keeps its size when clicked
       const color = FACTION_COLORS[planet.faction];
       const completed = planet.nodes.filter(n => this.isMissionCompleted(planet.name, n.name)).length;
       const total = planet.nodes.length;
@@ -388,73 +581,78 @@ export default class Navigation {
       this.ctx.save();
       this.ctx.translate(x, y);
 
-      // Atmosphere glow
+      const isEarth = planet.name === 'Earth';
+
+      // Atmosphere glow (blue for Earth)
       if (unlocked) {
-        const atmo = this.ctx.createRadialGradient(0, 0, r, 0, 0, r + 80);
-        atmo.addColorStop(0, 'rgba(232,93,42,0.15)');
-        atmo.addColorStop(0.5, 'rgba(232,93,42,0.05)');
+        const atmo = this.ctx.createRadialGradient(0, 0, r, 0, 0, r + 80 * k);
+        atmo.addColorStop(0, isEarth ? 'rgba(110,175,255,0.30)' : 'rgba(232,93,42,0.15)');
+        atmo.addColorStop(0.5, isEarth ? 'rgba(110,175,255,0.10)' : 'rgba(232,93,42,0.05)');
         atmo.addColorStop(1, 'transparent');
         this.ctx.fillStyle = atmo;
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, r + 80, 0, Math.PI * 2);
+        this.ctx.arc(0, 0, r + 80 * k, 0, Math.PI * 2);
         this.ctx.fill();
       }
 
-      // Planet body - gradient sphere
-      const planetGrad = this.ctx.createRadialGradient(-r * 0.3, -r * 0.3, 0, 0, 0, r);
-      planetGrad.addColorStop(0, '#4a3a2a');
-      planetGrad.addColorStop(0.4, '#3a2a1a');
-      planetGrad.addColorStop(1, '#1a1008');
-      this.ctx.fillStyle = planetGrad;
-      this.ctx.beginPath();
-      this.ctx.arc(0, 0, r, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      // Land masses
-      this.ctx.fillStyle = 'rgba(100,80,50,0.6)';
-      this.ctx.beginPath();
-      this.ctx.ellipse(-r * 0.2, -r * 0.1, r * 0.35, r * 0.25, 0.5, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.beginPath();
-      this.ctx.ellipse(r * 0.15, r * 0.1, r * 0.3, r * 0.2, -0.3, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.beginPath();
-      this.ctx.ellipse(-r * 0.1, r * 0.35, r * 0.25, r * 0.15, 0.8, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      // Glow on hover/select
-      if (isHovered || isSelected) {
-        const glow = this.ctx.createRadialGradient(0, 0, r, 0, 0, r + 30);
-        glow.addColorStop(0, color + '33');
-        glow.addColorStop(1, 'transparent');
-        this.ctx.fillStyle = glow;
+      if (isEarth) {
+        this.drawEarth(r);
+      } else {
+        // Planet body - gradient sphere
+        const planetGrad = this.ctx.createRadialGradient(-r * 0.3, -r * 0.3, 0, 0, 0, r);
+        planetGrad.addColorStop(0, '#4a3a2a');
+        planetGrad.addColorStop(0.4, '#3a2a1a');
+        planetGrad.addColorStop(1, '#1a1008');
+        this.ctx.fillStyle = planetGrad;
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, r + 30, 0, Math.PI * 2);
+        this.ctx.arc(0, 0, r, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Land masses
+        this.ctx.fillStyle = 'rgba(100,80,50,0.6)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(-r * 0.2, -r * 0.1, r * 0.35, r * 0.25, 0.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.beginPath();
+        this.ctx.ellipse(r * 0.15, r * 0.1, r * 0.3, r * 0.2, -0.3, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.beginPath();
+        this.ctx.ellipse(-r * 0.1, r * 0.35, r * 0.25, r * 0.15, 0.8, 0, Math.PI * 2);
         this.ctx.fill();
       }
 
-      // Hex frame
-      this.ctx.strokeStyle = unlocked ? color : '#444466';
-      this.ctx.lineWidth = isSelected ? 3 : (isHovered ? 2.5 : 2);
-      this.drawHexagon(0, 0, r + 6);
-      this.ctx.stroke();
+      // Hex frame (small planets only: Earth is shown big and unframed)
+      if (!isEarth) {
+        this.ctx.strokeStyle = unlocked ? color : '#444466';
+        this.ctx.lineWidth = isSelected ? 3 : (isHovered ? 2.5 : 2);
+        this.drawHexagon(0, 0, r + 6);
+        this.ctx.stroke();
+      }
 
       // Progress ring
       if (completed > 0) {
         this.ctx.strokeStyle = '#ffd700';
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, r + 12, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+        this.ctx.arc(0, 0, r + 14 * k, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
         this.ctx.stroke();
       }
 
-      // Draw mission nodes around planet when selected/hovered
-      if ((isSelected || isHovered) && unlocked) {
-        this.drawMissionNodes(planet, r, scale);
+      // Missions sit on the planet's surface, always visible
+      if (unlocked) {
+        this.drawMissionNodes(planet, r, k);
       }
 
-      // Label
-      if (isHovered || isSelected) {
+      // Earth's name, spaced out above the planet
+      if (isEarth) {
+        this.ctx.font = `bold ${34 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+        this.ctx.fillStyle = '#f0e8e0';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        if ('letterSpacing' in this.ctx) this.ctx.letterSpacing = `${14 * k}px`;
+        this.ctx.fillText('EARTH', 0, -r - 46 * k);
+        if ('letterSpacing' in this.ctx) this.ctx.letterSpacing = '0px';
+      } else if (isHovered || isSelected) { // Label
         this.ctx.font = 'bold 12px "Segoe UI", Roboto, system-ui, sans-serif';
         this.ctx.fillStyle = '#f0e8e0';
         this.ctx.textAlign = 'center';
@@ -475,229 +673,503 @@ export default class Navigation {
     }
   }
 
-  drawMissionNodes(planet, planetRadius, scale) {
-    const missionScale = scale * 0.6;
+  // Earth: oceans, continents, ice caps and clouds on a slowly spinning, slightly tilted globe. The ctx is already centred on the planet.
+  // Shapes are rough [longitude, latitude] outlines, projected onto the sphere (orthographic) and clipped to its disc.
+  drawEarth(r) {
+    const ctx = this.ctx;
+    const t = performance.now() / 1000;
+    const spin = (t * 5) % 360;          // continents turn 5 degrees a second
+    const cloudSpin = (t * 4) % 360;     // clouds drift a little slower, so they slide over the land
+    const RAD = Math.PI / 180;
+
+    // lon/lat -> point on the globe. Points on the far side are pushed onto the rim so shapes still close up.
+    const project = (lon, lat, centre) => {
+      const lam = (lon - centre) * RAD, phi = lat * RAD;
+      let x = r * Math.cos(phi) * Math.sin(lam);
+      let y = -r * Math.sin(phi);
+      if (Math.cos(phi) * Math.cos(lam) < 0) {
+        const d = Math.hypot(x, y) || 1;
+        x = (x / d) * r;
+        y = (y / d) * r;
+      }
+      return [x, y];
+    };
+    const fillShape = (points, centre, color) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      points.forEach(([lon, lat], i) => {
+        const [x, y] = project(lon, lat, centre);
+        if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Oceans
+    const ocean = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.05, 0, 0, r * 1.05);
+    ocean.addColorStop(0, '#3d8fe0');
+    ocean.addColorStop(0.5, '#1b5fb4');
+    ocean.addColorStop(1, '#07245a');
+    ctx.fillStyle = ocean;
+    ctx.fillRect(-r, -r, r * 2, r * 2);
+
+    // The land, ice and clouds are drawn on a globe whose axis leans a little, as Earth's does
+    ctx.save();
+    ctx.rotate(-0.32);
+    for (const land of EARTH_LAND_DENSE) fillShape(land, spin, '#4c9a52');
+    for (const desert of EARTH_DESERTS_DENSE) fillShape(desert, spin, '#c4a964');
+    fillShape(EARTH_NORTH_CAP, spin, '#e8f2ff');
+    fillShape(EARTH_SOUTH_CAP, spin, '#e8f2ff');
+    for (const [lon, lat, w, h] of EARTH_CLOUDS) {
+      const lam = (lon - cloudSpin) * RAD, phi = lat * RAD;
+      const facing = Math.cos(phi) * Math.cos(lam);   // clouds on the far side are hidden; near the rim they thin out
+      if (facing <= 0.05) continue;
+      const [x, y] = project(lon, lat, cloudSpin);
+      ctx.fillStyle = `rgba(255,255,255,${0.6 * Math.min(1, facing * 2)})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, (w / 90) * r * Math.max(0.3, facing), (h / 90) * r, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Sunlight from the top left, a dark night edge, and a pale blue rim of atmosphere
+    const shade = ctx.createRadialGradient(-r * 0.45, -r * 0.45, r * 0.2, 0, 0, r * 1.15);
+    shade.addColorStop(0, 'rgba(255,255,255,0.14)');
+    shade.addColorStop(0.5, 'rgba(0,0,0,0)');
+    shade.addColorStop(1, 'rgba(0,0,10,0.75)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(-r, -r, r * 2, r * 2);
+    const rim = ctx.createRadialGradient(0, 0, r * 0.82, 0, 0, r);
+    rim.addColorStop(0, 'rgba(120,180,255,0)');
+    rim.addColorStop(1, 'rgba(120,180,255,0.35)');
+    ctx.fillStyle = rim;
+    ctx.fillRect(-r, -r, r * 2, r * 2);
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(140,190,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Missions on the planet's surface: a marker with the mission's name beside it. The ctx is centred on the planet.
+  // A mission is unlocked when it is played, or when a played mission is linked to it by a route.
+  // Until something is played, the first mission is open as the entry point. Hubs are always open.
+  isMissionUnlocked(planet, mission) {
+    if (mission.type === 'Hub') return true;
+    if (this.isMissionCompleted(planet.name, mission.name)) return true;
+    const played = planet.nodes.some((m) => m.type !== 'Hub' && this.isMissionCompleted(planet.name, m.name));
+    if (!played) return planet.nodes.find((m) => m.type !== 'Hub') === mission;
+    if (planet.name !== 'Earth') return false;
+    return [...linkedMissions(planet, mission.name)].some((name) => this.isMissionCompleted(planet.name, name));
+  }
+
+  // A rhombus (diamond) at the origin, half-diagonal d
+  drawRhombus(ctx, d, color) {
+    ctx.beginPath();
+    ctx.moveTo(0, -d); ctx.lineTo(d, 0); ctx.lineTo(0, d); ctx.lineTo(-d, 0);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  // A padlock, drawn at the origin: grey body with a shackle
+  drawLock(ctx, k) {
+    const bw = 10 * k, bh = 8 * k;
+    ctx.fillStyle = '#8a90a0';
+    ctx.fillRect(-bw / 2, -bh / 2 + 2 * k, bw, bh);
+    ctx.strokeStyle = '#8a90a0';
+    ctx.lineWidth = 2 * k;
+    ctx.beginPath();
+    ctx.arc(0, -bh / 2 + 2 * k, 3.5 * k, Math.PI, 0);
+    ctx.stroke();
+  }
+
+  drawMissionNodes(planet, planetRadius, k) {
+    const ctx = this.ctx;
     for (const mission of planet.nodes) {
       const pos = mission.pos || { x: 0, y: 0 };
-      const mx = pos.x * missionScale;
-      const my = pos.y * missionScale;
+      const mx = pos.x * planetRadius;
+      const my = pos.y * planetRadius;
       const isHovered = this.hoveredMission === mission.name;
       const isSelected = this.selectedMission === mission.name;
       const completed = this.isMissionCompleted(planet.name, mission.name);
-      const nodeR = 14 + (isHovered || isSelected ? 4 : 0);
+      const nodeR = (13 + (isHovered || isSelected ? 3 : 0)) * k;
       const missionColor = mission.faction ? FACTION_COLORS[mission.faction] : FACTION_COLORS[planet.faction];
 
-      this.ctx.save();
-      this.ctx.translate(mx, my);
+      ctx.save();
+      ctx.translate(mx, my);
 
-      // Connection line to planet center
-      this.ctx.strokeStyle = missionColor + '44';
-      this.ctx.lineWidth = 1;
-      this.ctx.setLineDash([4, 4]);
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, 0);
-      this.ctx.lineTo(-mx * 0.5, -my * 0.5);
-      this.ctx.stroke();
-      this.ctx.setLineDash([]);
-
-      // Glow
+      // Glow when hovered or selected
       if (isHovered || isSelected) {
-        const glow = this.ctx.createRadialGradient(0, 0, 0, 0, 0, nodeR + 12);
-        glow.addColorStop(0, missionColor + '55');
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, nodeR + 16 * k);
+        glow.addColorStop(0, missionColor + '77');
         glow.addColorStop(1, 'transparent');
-        this.ctx.fillStyle = glow;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, nodeR + 12, 0, Math.PI * 2);
-        this.ctx.fill();
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, 0, nodeR + 16 * k, 0, Math.PI * 2);
+        ctx.fill();
       }
 
-      // Node hex
-      this.ctx.fillStyle = completed ? '#2a3a1a' : 'rgba(18,18,30,0.95)';
-      this.ctx.strokeStyle = completed ? '#44aa44' : (isSelected ? missionColor : (isHovered ? missionColor + 'cc' : missionColor + '88'));
-      this.ctx.lineWidth = isSelected ? 2.5 : (isHovered ? 2 : 1.5);
-      this.drawHexagon(0, 0, nodeR);
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      // Mission icon
-      this.ctx.font = `${nodeR * 0.7}px Arial`;
-      this.ctx.fillStyle = completed ? '#44aa44' : missionColor;
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.shadowColor = missionColor;
-      this.ctx.shadowBlur = 6;
-      this.ctx.fillText(MISSION_ICONS[mission.type] || '◆', 0, 0);
-      this.ctx.shadowBlur = 0;
-
-      // Progress ring for completed
+      // Marker: a white rhombus when played, a pulsing blue node when unlocked but not played, a lock when locked
+      const unlocked = this.isMissionUnlocked(planet, mission);
       if (completed) {
-        this.ctx.strokeStyle = '#ffd700';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, nodeR + 3, -Math.PI / 2, Math.PI * 1.5);
-        this.ctx.stroke();
+        this.drawRhombus(ctx, 6 * k, '#ffffff');
+      } else if (unlocked) {
+        const pulse = 1 + Math.sin(this.animTime * 4) * 0.12;
+        this.drawRhombus(ctx, 9 * k * pulse + 4 * k * pulse, 'rgba(77,163,255,0.25)');
+        this.drawRhombus(ctx, 9 * k * pulse, '#4da3ff');
+      } else {
+        this.drawLock(ctx, k);
       }
 
-      // Label on hover
+      // Name beside the marker, with a dark halo so it reads over the planet
+      const fontSize = 22 * k;
+      ctx.font = `bold ${fontSize}px "Segoe UI", Roboto, system-ui, sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.95)';
+      ctx.shadowBlur = 7 * k;
+      ctx.fillStyle = completed ? '#7ad07a' : (isHovered || isSelected ? '#ffd78a' : '#f0e8e0');
+      if ('letterSpacing' in ctx) ctx.letterSpacing = `${2 * k}px`;
+      ctx.fillText(mission.name.toUpperCase(), nodeR + 10 * k, 0);
       if (isHovered || isSelected) {
-        this.ctx.font = 'bold 12px "Segoe UI", Roboto, system-ui, sans-serif';
-        this.ctx.fillStyle = '#f0e8e0';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'top';
-        this.ctx.fillText(mission.name, 0, nodeR + 8);
-        this.ctx.font = '11px "Segoe UI", Roboto, system-ui, sans-serif';
-        this.ctx.fillStyle = '#ffd700';
-        this.ctx.fillText(`Lv ${mission.level}`, 0, nodeR + 22);
+        ctx.font = `${fontSize * 0.6}px "Segoe UI", Roboto, system-ui, sans-serif`;
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(`${mission.type}  ·  Lv ${mission.level}`, nodeR + 10 * k, fontSize * 0.95);
       }
+      if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+      ctx.shadowBlur = 0;
 
-      this.ctx.restore();
+      ctx.restore();
     }
   }
 
-  drawDetailPanel(cx, cy, scale) {
-    if (!this.selectedPlanet || this.panelAlpha < 0.01) return;
-    const planet = STAR_CHART.find(p => p.name === this.selectedPlanet);
-    if (!planet) return;
-
-    const G = this.panelGeom(planet);
-    const { w, x, y, h } = G;
-
-    this.ctx.save();
-    this.ctx.globalAlpha = this.panelAlpha;
-
-    // Panel bg
-    const grad = this.ctx.createLinearGradient(x, y, x, y + h);
-    grad.addColorStop(0, 'rgba(18,18,30,0.98)');
-    grad.addColorStop(1, 'rgba(10,10,20,0.99)');
-    this.ctx.fillStyle = grad;
-    this.ctx.strokeStyle = FACTION_COLORS[planet.faction] + '66';
-    this.ctx.lineWidth = 1;
-    this.roundRect(x, y, w, h, 8);
-    this.ctx.fill();
-    this.ctx.stroke();
-
-    // Header
-    this.ctx.fillStyle = FACTION_COLORS[planet.faction] + '22';
-    this.roundRect(x, y, w, 60, 8);
-    this.ctx.fill();
-    
-    this.ctx.font = 'bold 16px "Segoe UI", Roboto, system-ui, sans-serif';
-    this.ctx.fillStyle = '#f0e8e0';
-    this.ctx.textAlign = 'left';
-    this.ctx.fillText(planet.name.toUpperCase(), x + 16, y + 28);
-    
-    this.ctx.font = '12px "Segoe UI", Roboto, system-ui, sans-serif';
-    this.ctx.fillStyle = FACTION_COLORS[planet.faction];
-    this.ctx.fillText(planet.faction.toUpperCase() + ' CONTROL', x + 16, y + 46);
-
-    // Close hint
-    this.ctx.font = '12px "Segoe UI", Roboto, system-ui, sans-serif';
-    this.ctx.fillStyle = '#8a8aaa';
-    this.ctx.textAlign = 'right';
-    this.ctx.fillText('[ESC] Back', x + w - 16, y + 28);
-
-    // Mission list
-    const startY = G.startY - 5;
-    const itemH = G.itemH;
-    planet.nodes.forEach((mission, idx) => {
-      const itemY = startY + idx * itemH;
-      const completed = this.isMissionCompleted(planet.name, mission.name);
-      const isHovered = this.hoveredMission === mission.name;
-      const isSelected = this.selectedMission === mission.name;
-
-      // Item bg
-      if (isSelected) {
-        this.ctx.fillStyle = FACTION_COLORS[planet.faction] + '33';
-        this.ctx.strokeStyle = FACTION_COLORS[planet.faction];
-        this.ctx.lineWidth = 2;
-      } else if (isHovered) {
-        this.ctx.fillStyle = 'rgba(255,107,53,0.1)';
-        this.ctx.strokeStyle = FACTION_COLORS[planet.faction] + '88';
-        this.ctx.lineWidth = 1.5;
-      } else if (completed) {
-        this.ctx.fillStyle = '#44aa4422';
-        this.ctx.strokeStyle = '#44aa4466';
-        this.ctx.lineWidth = 1;
-      } else {
-        this.ctx.fillStyle = 'rgba(10,10,20,0.6)';
-        this.ctx.strokeStyle = '#333355';
-        this.ctx.lineWidth = 1;
+  // The sky node under a point: the node itself or its name beside it
+  skyNodeAt(x, y) {
+    const { k } = this.planetLayout();
+    const ctx = this.ctx;
+    for (const node of SKY_NODES) {
+      const nx = this.canvas.width * node.x, ny = this.canvas.height * node.y;
+      let textW = 0;
+      if (ctx) {
+        ctx.save();
+        ctx.font = `bold ${22 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+        textW = ctx.measureText(node.label).width;
+        ctx.restore();
       }
-      this.roundRect(x + 8, itemY, w - 16, itemH - 8, 4);
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      // Mission icon
-      const iconX = x + 20;
-      const iconY = itemY + 8;
-      const iconR = 20;
-      this.ctx.fillStyle = completed ? '#44aa44' : (FACTION_COLORS[planet.faction] + '33');
-      this.ctx.strokeStyle = completed ? '#44aa44' : FACTION_COLORS[planet.faction];
-      this.ctx.lineWidth = 1.5;
-      this.ctx.save();
-      this.ctx.translate(iconX + iconR, iconY + iconR);
-      this.drawHexagon(0, 0, iconR);
-      this.ctx.fill();
-      this.ctx.stroke();
-      this.ctx.font = `${iconR * 0.8}px Arial`;
-      this.ctx.fillStyle = completed ? '#050508' : FACTION_COLORS[planet.faction];
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.fillText(MISSION_ICONS[mission.type] || '◆', 0, 0);
-      this.ctx.restore();
-
-      // Mission name
-      this.ctx.font = 'bold 12px "Segoe UI", Roboto, system-ui, sans-serif';
-      this.ctx.fillStyle = completed ? '#44aa44' : '#f0e8e0';
-      this.ctx.textAlign = 'left';
-      this.ctx.textBaseline = 'top';
-      this.ctx.fillText(mission.name, iconX + 50, itemY + 10);
-
-      // Meta
-      this.ctx.font = '11px "Segoe UI", Roboto, system-ui, sans-serif';
-      this.ctx.fillStyle = '#ffd700';
-      this.ctx.fillText(`Lv ${mission.level}`, iconX + 50, itemY + 30);
-      this.ctx.fillStyle = '#9a8a7a';
-      this.ctx.fillText(mission.type, iconX + 120, itemY + 30);
-
-      if (completed) {
-        this.ctx.fillStyle = '#44aa44';
-        this.ctx.font = 'bold 12px "Segoe UI", Roboto, system-ui, sans-serif';
-        this.ctx.fillText('COMPLETED', x + w - 100, itemY + 10);
-      }
-    });
-
-    // Launch button
-    if (this.selectedMission) {
-      const btnY = G.btnY;
-      const mission = planet.nodes.find(n => n.name === this.selectedMission);
-      const canLaunch = mission && !this.isMissionCompleted(planet.name, mission.name);
-      
-      this.ctx.fillStyle = canLaunch ? 
-        this.ctx.createLinearGradient(x + 16, btnY, x + w - 16, btnY) : '#333355';
-      if (canLaunch) {
-        const g = this.ctx.fillStyle;
-        g.addColorStop(0, '#ff6b35');
-        g.addColorStop(1, '#e85d2a');
-      }
-      this.ctx.strokeStyle = canLaunch ? '#ff6b35' : '#444466';
-      this.ctx.lineWidth = 1;
-      this.roundRect(x + 16, btnY, w - 32, G.btnH, 4);
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      this.ctx.font = 'bold 12px "Segoe UI", Roboto, system-ui, sans-serif';
-      this.ctx.fillStyle = canLaunch ? '#050508' : '#8a8aaa';
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.fillText(canLaunch ? `LAUNCH ${mission.type}` : 'SELECT MISSION', x + w/2, btnY + G.btnH / 2);
+      if (x >= nx - 30 && x <= nx + 20 * k + textW + 10 && Math.abs(y - ny) <= 30) return node;
     }
+    return null;
+  }
 
+  // Sky nodes: a white rhombus with its name beside it
+  drawSkyNodes(w, h) {
+    const ctx = this.ctx;
+    const { k } = this.planetLayout(w, h);
+    for (const node of SKY_NODES) {
+      const x = w * node.x, y = h * node.y;
+      const hovered = this.hoveredSky === node.label;
+      ctx.save();
+      ctx.translate(x, y);
+      if (hovered) {
+        // Same glow as a hovered mission
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, 22 * k);
+        glow.addColorStop(0, 'rgba(255,255,255,0.45)');
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, 0, 22 * k, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      this.drawRhombus(ctx, 6 * k, '#ffffff');
+      ctx.font = `bold ${22 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+      ctx.fillStyle = hovered ? '#ffd78a' : '#f0e8e0';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.95)';
+      ctx.shadowBlur = 7 * k;
+      ctx.fillText(node.label, 20 * k, 0);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+  }
+
+  // Neighbouring planets around Earth, dimmed because only Earth can be visited so far.
+  // Positions are fractions of the screen, taken from the reference.
+  drawDestinations(w, h) {
+    const ctx = this.ctx;
+    const { cx, cy, r, k } = this.planetLayout(w, h);
+    const places = [
+      { label: 'TO MARS', from: 'Eurasia', x: w * 0.508, y: h * 0.111 },
+      { label: 'TO VENUS', from: 'Cambria', x: w * 0.458, y: h * 0.898 },
+      { label: 'TO LUA', from: 'Cervantes', x: w * 0.763, y: h * 0.489 },
+    ];
+    const earth = STAR_CHART.find((planet) => planet.name === 'Earth');
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    for (const p of places) {
+      // Curved route from its mission on Earth to the marker
+      const from = earth?.nodes.find((n) => n.name === p.from);
+      if (from) {
+        const ax = cx + from.pos.x * r, ay = cy + from.pos.y * r;
+        const len = Math.hypot(p.x - ax, p.y - ay) || 1;
+        const bend = len * 0.2;
+        const qx = (ax + p.x) / 2 - ((p.y - ay) / len) * bend;
+        const qy = (ay + p.y) / 2 + ((p.x - ax) / len) * bend;
+        ctx.strokeStyle = 'rgba(200,210,230,0.55)';
+        ctx.lineWidth = 1.5 * k;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.quadraticCurveTo(qx, qy, p.x, p.y);
+        ctx.stroke();
+      }
+
+      // Double diamond marker
+      ctx.strokeStyle = '#e8eefc';
+      ctx.lineWidth = 2 * k;
+      for (const s of [18 * k, 11 * k]) {
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - s); ctx.lineTo(p.x + s, p.y); ctx.lineTo(p.x, p.y + s); ctx.lineTo(p.x - s, p.y);
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      // Label
+      ctx.font = `bold ${28 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+      ctx.fillStyle = '#e8eefc';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      if ('letterSpacing' in ctx) ctx.letterSpacing = `${3 * k}px`;
+      ctx.fillText(p.label, p.x + 34 * k, p.y);
+      if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    }
+    ctx.restore();
+  }
+
+  // Top-left profile icon and invite (+) button. Both open the same squad panel (this.onSquad).
+  squadButtons() {
+    const y = MENU_TOP_MARGIN;
+    return {
+      profile: { x: MENU_SIDE_MARGIN, y, w: 42, h: 42 },
+      mode: { x: MENU_SIDE_MARGIN + 42 + 6, y, w: 42, h: 42 },
+      invite: { x: MENU_SIDE_MARGIN + 42 + 6 + 42 + 6, y, w: 42, h: 42 },
+    };
+  }
+
+  // Drawn by the same function as the Arsenal's, so the two screens match
+  drawSquadButtons() {
+    const b = this.squadButtons();
+    this.ctx.save();
+    drawProfileAndInvite(this.ctx, b.profile, b.invite, { box: b.mode, glyph: getMode().glyph });
     this.ctx.restore();
   }
 
-  drawTopTabs(ctx, w) {
-    drawTopTabs(ctx, w, 'navigation');
+  // Top-left "Starting <mission> (<planet>)" bar, shown once a mission is selected by clicking.
+  // Level circle on the left, an X that cancels the selection, and the name. Clicking the bar launches the mission.
+  startBar() {
+    if (!this.selectedMission || !this.canvas) return null;
+    const planet = STAR_CHART.find((p) => p.name === this.selectedPlanet);
+    const mission = planet?.nodes.find((m) => m.name === this.selectedMission);
+    if (!mission) return null;
+    const k = this.planetLayout().k;
+    // Starts after the profile, mode and invite buttons (42px each, 6px apart, 7px before the bar)
+    const x = MENU_SIDE_MARGIN + 3 * 42 + 2 * 6 + 7, y = MENU_TOP_MARGIN, h = 42; // the same 42px height as the icons
+    // Wide enough for the whole "Starting <mission> (<planet>)" text, with room after it
+    let textW = 0;
+    if (this.ctx) {
+      this.ctx.save();
+      this.ctx.font = `bold ${22 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+      textW = this.ctx.measureText(`Starting ${mission.name} (${planet.name})`).width;
+      this.ctx.restore();
+    }
+    const w = Math.max(330 * k, 126 * k + textW + 16 * k);
+    return {
+      planet, mission, k,
+      bar: { x, y, w, h },
+      level: { x: x + 24 * k, y: y + h / 2, r: 16 * k },
+      toggle: { x: x + 48 * k, y: y + (h - 28 * k) / 2, w: 28 * k, h: 28 * k },
+      close: { x: x + 84 * k, y: y + (h - 28 * k) / 2, w: 28 * k, h: 28 * k },
+    };
+  }
+
+  drawStartBar() {
+    const sb = this.startBar();
+    if (!sb) return;
+    const { planet, mission, k, bar, level, close, toggle } = sb;
+    const ctx = this.ctx;
+    ctx.save();
+    // The same box as the squad icons and the currency bar: panel fill, faint outline, small corners
+    ctx.fillStyle = 'rgba(24,30,44,0.92)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    this.roundRect(bar.x, bar.y, bar.w, bar.h, 2 * k);
+    ctx.fill();
+    ctx.stroke();
+
+    // Countdown: a ring that drains as the seconds run out, with the seconds in the middle
+    const lr = level.r, lcx = level.x, lcy = level.y;
+    // Each second the ring drains fully and starts again; the number steps down once per cycle
+    const elapsed = Math.min(START_COUNTDOWN, START_COUNTDOWN - this.countdown);
+    const left = 1 - (elapsed % 1);
+    ctx.beginPath();
+    ctx.arc(lcx, lcy, lr, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 2 * k;
+    ctx.stroke();
+    if (left > 0) {
+      // The remaining time runs counter-clockwise from 12 o'clock
+      ctx.beginPath();
+      ctx.arc(lcx, lcy, lr, -Math.PI / 2, -Math.PI / 2 - Math.PI * 2 * left, true);
+      ctx.strokeStyle = '#ffd78a';
+      ctx.lineWidth = 2 * k;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    }
+    ctx.font = `bold ${22 * k}px "Segoe UI", Roboto, system-ui, sans-serif`; // same size as the mission name
+    ctx.fillStyle = '#ffd78a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(Math.max(1, Math.ceil(this.countdown))), lcx, lcy);
+
+    // Pause / play in its own box, like the X: a bar pair while the start is on, a triangle while it is paused
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(toggle.x, toggle.y, toggle.w, toggle.h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(toggle.x + 0.5, toggle.y + 0.5, toggle.w - 1, toggle.h - 1);
+    ctx.fillStyle = '#f0e8e0';
+    const tx = toggle.x + toggle.w / 2, ty = toggle.y + toggle.h / 2, ts = 7 * k;
+    ctx.beginPath();
+    if (this.startPaused) {
+      ctx.moveTo(tx - ts * 0.7, ty - ts); ctx.lineTo(tx + ts, ty); ctx.lineTo(tx - ts * 0.7, ty + ts);
+    } else {
+      ctx.rect(tx - ts * 0.8, ty - ts, ts * 0.6, ts * 2);
+      ctx.rect(tx + ts * 0.2, ty - ts, ts * 0.6, ts * 2);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Cancel X in its own box
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(close.x, close.y, close.w, close.h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(close.x + 0.5, close.y + 0.5, close.w - 1, close.h - 1);
+    ctx.strokeStyle = '#f0e8e0';
+    ctx.lineWidth = 3 * k;
+    const cx = close.x + close.w / 2, cy = close.y + close.h / 2, s = 7 * k;
+    ctx.beginPath();
+    ctx.moveTo(cx - s, cy - s); ctx.lineTo(cx + s, cy + s);
+    ctx.moveTo(cx + s, cy - s); ctx.lineTo(cx - s, cy + s);
+    ctx.stroke();
+
+    // "Starting <mission> (<planet>)"
+    ctx.font = `${22 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffd78a';
+    const lead = 'Starting ';
+    ctx.fillText(lead, close.x + close.w + 14 * k, bar.y + bar.h / 2);
+    const leadW = ctx.measureText(lead).width;
+    ctx.fillStyle = '#f0e8e0';
+    ctx.font = `bold ${22 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+    ctx.fillText(`${mission.name} (${planet.name})`, close.x + close.w + 14 * k + leadW, bar.y + bar.h / 2);
+    ctx.restore();
+  }
+
+  // The mission card: a banner, the mission name, its type, faction and level, and suggested damage.
+  // The banner uses the faction colour and mission icon, since there is no mission art yet.
+  drawDetailPanel() {
+    const active = this.activeCard();
+    if (!active) return;
+    const { planet, mission } = active;
+    const card = this.cardRect(mission);
+    const { x, y, w, imgH, bodyH, h, k } = card;
+    const ctx = this.ctx;
+    const faction = mission.faction ?? planet.faction;
+    const color = FACTION_COLORS[faction] ?? '#e85d2a';
+    const completed = this.isMissionCompleted(planet.name, mission.name);
+
+    ctx.save();
+    // Frame and body
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 18 * k;
+    this.roundRect(x, y, w, h, 6 * k);
+    ctx.fillStyle = 'rgba(14,16,24,0.94)';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Banner (clipped to the card's top corners)
+    ctx.save();
+    this.roundRect(x, y, w, h, 6 * k);
+    ctx.clip();
+    const banner = ctx.createLinearGradient(x, y, x + w, y + imgH);
+    banner.addColorStop(0, color + '55');
+    banner.addColorStop(0.6, '#1b2028');
+    banner.addColorStop(1, '#0c0e14');
+    ctx.fillStyle = banner;
+    ctx.fillRect(x, y, w, imgH);
+    ctx.font = `${96 * k}px Arial`;
+    ctx.fillStyle = color + '88';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(MISSION_ICONS[mission.type] || '◆', x + w * 0.72, y + imgH * 0.5);
+    // Name over the bottom of the banner
+    ctx.font = `bold ${30 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+    ctx.fillStyle = '#f5f0ea';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    if ('letterSpacing' in ctx) ctx.letterSpacing = `${1 * k}px`;
+    ctx.fillText(mission.name.toUpperCase(), x + 16 * k, y + imgH - 16 * k);
+    if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    ctx.restore();
+
+    // Body text
+    const tx = x + 16 * k;
+    let ty = y + imgH + 30 * k;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${18 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+    ctx.fillStyle = '#ffd78a';
+    ctx.fillText(mission.type.toUpperCase(), tx, ty);
+    ty += 28 * k;
+    ctx.font = `bold ${15 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+    ctx.fillStyle = '#f0e8e0';
+    ctx.fillText(faction.toUpperCase(), tx, ty);
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText(mission.level, tx + ctx.measureText(faction.toUpperCase() + '  ').width, ty);
+    ty += 28 * k;
+    ctx.font = `${13 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+    ctx.fillStyle = '#9a9ab0';
+    ctx.fillText('SUGGESTED DAMAGE', tx, ty);
+    // Placeholder damage icons until real damage data exists
+    for (let i = 0; i < 2; i++) {
+      const dx = tx + ctx.measureText('SUGGESTED DAMAGE  ').width + i * 22 * k;
+      ctx.strokeStyle = '#9a9ab0';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(dx + 8 * k, ty - 7 * k); ctx.lineTo(dx + 15 * k, ty); ctx.lineTo(dx + 8 * k, ty + 7 * k); ctx.lineTo(dx + 1 * k, ty);
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    if (completed) {
+      ctx.font = `bold ${13 * k}px "Segoe UI", Roboto, system-ui, sans-serif`;
+      ctx.fillStyle = '#7ad07a';
+      ctx.textAlign = 'right';
+      ctx.fillText('COMPLETED', x + w - 16 * k, y + imgH - 16 * k - 34 * k);
+    }
+    ctx.restore();
   }
 
   // Small Simulacrum button in the top-right corner, kept clear of the Earth planet and its panel
@@ -722,9 +1194,6 @@ export default class Navigation {
   }
 
   drawUI(w, h) {
-    this.drawTopTabs(this.ctx, w);
-    drawCornerAccents(this.ctx, w, h);
-    this.drawSimulacrumButton(this.ctx, w);
 
     // Subtitle
     this.ctx.font = '12px "Segoe UI", Roboto, system-ui, sans-serif';

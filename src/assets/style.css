@@ -32,6 +32,8 @@
 html,
 body {
   height: 100%;
+  height: 100lvh; /* full screen on iPad full-screen apps, where the normal viewport is 32px short */
+  background-color: #0f111a;
 }
 
 body {
@@ -43,12 +45,20 @@ body {
   user-select: none;
 }
 
+#loading-screen, #login-screen, #touch-controls, #rotate-prompt { height: 100lvh; }
+
+/* lvh: in iPad full-screen web apps the normal viewport is 32px short of the screen; the large viewport is the whole screen */
 #game-container {
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100vw;
   height: 100vh;
-  height: 100dvh; /* visible height on mobile, excluding the browser bars */
+  height: 100lvh;
+  background-color: #0f111a;
 }
+
+body.touch-device canvas { cursor: pointer; } /* iOS also treats cursor:pointer elements as tappable */
 
 canvas {
   display: block;
@@ -437,9 +447,8 @@ html, body { touch-action: none; overscroll-behavior: none; -webkit-user-select:
 }
 #rotate-prompt .rp-icon { font-size: 64px; color: #ff6b35; }
 #rotate-prompt .rp-sub { font-size: 13px; font-weight: 400; color: #9090b0; letter-spacing: 1px; }
-/* Shown when held upright, and after a triple-tap exit until the player is back in landscape */
+/* Shown when held upright */
 @media (orientation: portrait) { body.touch-device #rotate-prompt { display: flex; } }
-body.touch-device.landscape-released #rotate-prompt { display: flex; }
 /* Shared close button (src/ui/menus/back_button.js): Windows-style × in the top-right corner */
 #menu-close {
   position: fixed; z-index: 60;
@@ -540,5 +549,5 @@ body.sim-menu-open #hud { z-index: 1; }
 #touch-controls.sim:not(.sim-play) .tc-buttons, #touch-controls.sim:not(.sim-play) .tc-stick { display: none; }
 #touch-controls.sim-play .tc-stick { display: block; }
 
-/* Prompt dismissed by a tap on first load: the game plays in portrait too (it returns after a triple-tap release) */
-body.rotate-dismissed:not(.landscape-released) #rotate-prompt { display: none !important; }
+/* Prompt dismissed by a tap: the game plays in portrait too */
+body.rotate-dismissed #rotate-prompt { display: none !important; }
