@@ -4,10 +4,10 @@
     "uniqueName": "/Lotus/Weapons/Tenno/Pistol/Lato/LatoWeapon",
     "codexSecret": false,
     "description": "Standard-issue Tenno sidearm. Accurate and reliable.",
-    "criticalChance": 0.26,
-    "criticalMultiplier": 2,
-    "procChance": 0.11,
-    "fireRate": 5.67,
+    "criticalChance": 0.1,
+    "criticalMultiplier": 1.8,
+    "procChance": 0.06,
+    "fireRate": 4.5,
     "masteryReq": 0,
     "productCategory": "Pistols",
     "slot": 2,
@@ -16,7 +16,7 @@
     "noise": "Alarming",
     "trigger": "Semi",
     "magazineSize": 15,
-    "reloadTime": 1.9,
+    "reloadTime": 1.0,
     "multishot": 1,
     "buildPrice": 5000,
     "buildTime": 43200,
@@ -26,10 +26,10 @@
     "components": [],
     "type": "Pistol",
     "damage": {
-      "total": 36,
-      "impact": 10.8,
-      "puncture": 14.4,
-      "slash": 10.8,
+      "total": 40,
+      "impact": 10,
+      "puncture": 10,
+      "slash": 20,
       "heat": 0,
       "cold": 0,
       "electricity": 0,
@@ -55,21 +55,19 @@
     "attacks": [
       {
         "name": "Normal",
-        "speed": 5.67,
-        "crit_chance": 26,
-        "crit_mult": 2,
-        "status_chance": 11,
+        "speed": 4.5,
+        "crit_chance": 10,
+        "crit_mult": 1.8,
+        "status_chance": 6,
         "shot_type": "HitScan",
         "damage": {
-          "impact": 10.8,
-          "puncture": 14.4,
-          "slash": 10.8
+          "impact": 10,
+          "puncture": 10,
+          "slash": 20
         }
       }
     ],
-    "polarities": [
-      "naramon"
-    ],
+    "polarities": [],
     "tags": [
       "Tenno"
     ],
@@ -77,16 +75,11 @@
     "wikiaThumbnail": "",
     "wikiaUrl": "https://wiki.warframe.com/w/Lato",
     "introduced": {
-      "name": "Update 7",
-      "url": "https://wiki.warframe.com/w/Update_7",
-      "aliases": [
-        "7"
-      ],
-      "parent": "7",
-      "date": "2013-06-01"
+      "name": "Vanilla",
+      "date": "2012-10-25"
     },
     "disposition": 1.4,
-    "releaseDate": "2013-06-01",
+    "releaseDate": "2012-10-25",
     "isPrime": false,
     "masterable": true
   }
