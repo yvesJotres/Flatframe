@@ -2,13 +2,31 @@
 // Types: health, primary_ammo, secondary_ammo, energy
 
 import { LOOT } from '../assets/colors.js';
+import { wallet } from '../economy/wallet.js';
+import { ENDO_ORB_VALUES } from '../economy/currencies.js';
 
 export const LOOT_TYPES = {
   HEALTH: 'health',
   PRIMARY_AMMO: 'primary_ammo',
   SECONDARY_AMMO: 'secondary_ammo',
   ENERGY: 'energy',
+  CREDITS: 'credits',
+  ENDO: 'endo',
 };
+
+// Endo orbs drop on their own roll, like Credits, so the item balance is unchanged.
+// The wiki gives the orb sizes (15, 50, 80) but not how often they drop, so this chance is a placeholder to tune.
+export const ENDO_DROP_CHANCE = 0.1;
+export function rollEndoOrbAmount() {
+  return ENDO_ORB_VALUES[Math.floor(Math.random() * ENDO_ORB_VALUES.length)];
+}
+
+// Credits drop on their own roll, in addition to the 50% item drop above, so the item balance is unchanged.
+// The wiki says enemies drop Credits but gives no numbers, so these are placeholders to tune.
+export const CREDIT_DROP_CHANCE = 0.25;
+export function creditDropAmount(level = 1) {
+  return 20 + 5 * (Math.max(1, level) - 1);
+}
 
 // 50% of kills drop loot. When a drop happens, the type is rolled from
 // these weights: energy 30%, health 30%, primary ammo 20%, secondary ammo 20%.
@@ -26,6 +44,8 @@ const LOOT_COLORS = {
   [LOOT_TYPES.PRIMARY_AMMO]: LOOT.PRIMARY_AMMO,
   [LOOT_TYPES.SECONDARY_AMMO]: LOOT.SECONDARY_AMMO,
   [LOOT_TYPES.ENERGY]: LOOT.ENERGY,
+  [LOOT_TYPES.CREDITS]: '#7fc8e8',
+  [LOOT_TYPES.ENDO]: LOOT.ENDO,
 };
 
 const LOOT_LABELS = {
@@ -33,6 +53,8 @@ const LOOT_LABELS = {
   [LOOT_TYPES.PRIMARY_AMMO]: 'PRI',
   [LOOT_TYPES.SECONDARY_AMMO]: 'SEC',
   [LOOT_TYPES.ENERGY]: 'NRG',
+  [LOOT_TYPES.CREDITS]: 'CR',
+  [LOOT_TYPES.ENDO]: 'EN',
 };
 
 const PICKUP_RADIUS = 20;
@@ -129,10 +151,35 @@ export default class LootDrop {
 }
 
 // Helper to roll loot from an enemy's drop table.
-// Returns an array (0 or 1 drops) — 50% chance per kill, weighted by type.
+// Returns an array of drops (0 to 3): an item with 50% chance per kill (weighted by type),
+// plus Credits on their own roll (enemy.creditDropChance overrides the default),
+// plus an Endo orb on its own roll (enemy.endoDropChance overrides the default).
 export function rollLootDrop(enemy) {
+  const drops = [];
+  const item = rollItemDrop(enemy);
+  if (item) drops.push(item);
+  if (Math.random() < (enemy.creditDropChance ?? CREDIT_DROP_CHANCE)) {
+    drops.push(new LootDrop(
+      enemy.x + (Math.random() - 0.5) * 30,
+      enemy.y + (Math.random() - 0.5) * 30,
+      LOOT_TYPES.CREDITS,
+      creditDropAmount(enemy.lvl)
+    ));
+  }
+  if (Math.random() < (enemy.endoDropChance ?? ENDO_DROP_CHANCE)) {
+    drops.push(new LootDrop(
+      enemy.x + (Math.random() - 0.5) * 30,
+      enemy.y + (Math.random() - 0.5) * 30,
+      LOOT_TYPES.ENDO,
+      enemy.endoAmount ?? rollEndoOrbAmount()
+    ));
+  }
+  return drops;
+}
+
+function rollItemDrop(enemy) {
   const dropChance = enemy.dropChance ?? DEFAULT_DROP_CHANCE;
-  if (Math.random() >= dropChance) return [];
+  if (Math.random() >= dropChance) return null;
 
   const weights = enemy.lootWeights || DEFAULT_LOOT_WEIGHTS;
   const entries = Object.entries(weights);
@@ -151,14 +198,12 @@ export function rollLootDrop(enemy) {
     }
   }
 
-  return [
-    new LootDrop(
-      enemy.x + (Math.random() - 0.5) * 20,
-      enemy.y + (Math.random() - 0.5) * 20,
-      type,
-      1
-    ),
-  ];
+  return new LootDrop(
+    enemy.x + (Math.random() - 0.5) * 20,
+    enemy.y + (Math.random() - 0.5) * 20,
+    type,
+    1
+  );
 }
 
 export function applyLootPickup(player, loot) {
@@ -191,6 +236,14 @@ export function applyLootPickup(player, loot) {
     case LOOT_TYPES.ENERGY:
       const energyAmount = 25;
       player.energy = Math.min(player.maxEnergy, player.energy + energyAmount);
+      break;
+
+    case LOOT_TYPES.CREDITS:
+      wallet.add('credits', loot.amount);
+      break;
+
+    case LOOT_TYPES.ENDO:
+      wallet.add('endo', loot.amount);
       break;
   }
 }

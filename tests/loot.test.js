@@ -83,3 +83,33 @@ test('valid loot weights never produce an undefined type', () => {
     'all four types reachable'
   );
 });
+
+test('endo orb drops on its own roll with a wiki orb size', () => {
+  // item roll 0.9 (no item), credits roll 0.9 (no credits), endo roll 0.05 (drops), orb pick 0.5 → middle orb
+  const loot = withRandom([0.9, 0.9, 0.05, 0.5], () => rollLootDrop(corpse));
+  assert.equal(loot.length, 1);
+  assert.equal(loot[0].type, LOOT_TYPES.ENDO);
+  assert.equal(loot[0].amount, 50, 'orb sizes are 15, 50 and 80');
+});
+
+test('endo roll above the chance drops nothing', () => {
+  const loot = withRandom([0.9, 0.9, 0.5], () => rollLootDrop(corpse));
+  assert.equal(loot.length, 0);
+});
+
+test('endo pickup adds the orb amount to the wallet', async () => {
+  const { wallet } = await import('../src/economy/wallet.js');
+  const before = wallet.get('endo');
+  applyLootPickup({}, { type: LOOT_TYPES.ENDO, amount: 80 });
+  assert.equal(wallet.get('endo'), before + 80);
+  wallet.balances.endo = before; // restore so other tests start from the same balance
+});
+
+test('an enemy with wiki endo values drops its fixed orb size', () => {
+  // item roll 0.9 (no item), credits roll 0.9 (no credits), endo roll 0.0001 (drops under 0.00015)
+  const lancer = { x: 100, y: 100, endoDropChance: 0.00015, endoAmount: 80 };
+  const loot = withRandom([0.9, 0.9, 0.0001], () => rollLootDrop(lancer));
+  assert.equal(loot.length, 1);
+  assert.equal(loot[0].type, LOOT_TYPES.ENDO);
+  assert.equal(loot[0].amount, 80);
+});

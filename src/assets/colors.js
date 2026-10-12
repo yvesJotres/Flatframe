@@ -44,6 +44,7 @@ export const COLORS = {
   LOOT_PRIMARY_AMMO: '#44aaff',
   LOOT_SECONDARY_AMMO: '#ffaa44',
   LOOT_ENERGY: '#01d8ff',
+  LOOT_ENDO: '#e0b43a',
 
   // UI Theme
   ACCENT: '#ff6b35',
@@ -78,6 +79,7 @@ export const LOOT = {
   ENERGY: COLORS.LOOT_ENERGY,
   PRIMARY_AMMO: COLORS.LOOT_PRIMARY_AMMO,
   SECONDARY_AMMO: COLORS.LOOT_SECONDARY_AMMO,
+  ENDO: COLORS.LOOT_ENDO,
 };
 
 export const UI = {
