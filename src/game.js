@@ -155,6 +155,8 @@ if (touchSetting === 'On' || (touchSetting === 'Auto' && isTouchDevice())) {
       return screen === 'playing' && !pauseMenu.visible ? 'play' : 'menu';
     },
     getPlayerScreenPos: () => (player ? { x: player.x - camera.x, y: player.y - camera.y } : null),
+    getPlayerWorldPos: () => (player ? { x: player.x, y: player.y } : null),
+    getEnemies: () => enemies,
     isMeleeEquipped: () => !!player && player.currentWeapon === player.meleeWeapon,
   });
 }

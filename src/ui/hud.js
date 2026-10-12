@@ -1,4 +1,6 @@
 import { COMBO_RESET_MS } from '../engine/constants.js';
+import { SLASH_DASH } from '../warframe/abilities/slash_dash.js';
+import { RADIAL_BLIND, RADIAL_JAVELIN, EXALTED_BLADE } from '../warframe/abilities/excalibur_abilities.js';
 // DOM heads-up display.
 //
 // The markup lives in index.html; this class owns the numbers and the handful of
@@ -48,6 +50,13 @@ export default class Hud {
       frameDisplay: pick('frame-display'),
       armor: pick('armor-display'),
       energy: pick('energy-display'),
+      energyFill: pick('energy-fill'),
+      abilityIcons: [
+        { icon: pick('ability-slash-dash'), cost: SLASH_DASH.energyCost },
+        { icon: pick('ability-radial-blind'), cost: RADIAL_BLIND.energyCost },
+        { icon: pick('ability-radial-javelin'), cost: RADIAL_JAVELIN.energyCost },
+        { icon: pick('ability-exalted-blade'), cost: EXALTED_BLADE.energyCost },
+      ],
 
       // Mission banner (top-left)
       missionName: pick('mission-display'),
@@ -195,6 +204,11 @@ export default class Hud {
         setText(this.el.healthValue, `${Math.ceil(player.health)}`);
         setText(this.el.armor, `ARMOR ${player.armor}`);
         setText(this.el.energy, `ENERGY ${Math.ceil(player.energy)}`);
+        this.el.energyFill.style.width = percentOf(player.energy / player.maxEnergy);
+        // Dim each ability icon while there isn't enough energy to cast it
+        for (const { icon, cost } of this.el.abilityIcons) {
+          icon.classList.toggle('unavailable', player.energy < cost);
+        }
       }
 
       // Damage pinch — a red vignette for a moment whenever health OR shield drops.

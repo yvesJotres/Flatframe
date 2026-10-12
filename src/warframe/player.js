@@ -8,6 +8,8 @@ import { audioManager } from '../engine/audio.js';
 import HealthComponent from '../combat/health.js';
 import StatusManager from '../combat/status_manager.js';
 import { WeaponSwitchHandler } from './weapon_switch.js';
+import SlashDash, { SLASH_DASH } from './abilities/slash_dash.js';
+import { RADIAL_BLIND, RADIAL_JAVELIN, EXALTED_BLADE, ExaltedBlade, castRadialBlind, castRadialJavelin } from './abilities/excalibur_abilities.js';
 import { godMode } from '../debug/cheats.js';
 
 export default class Player {
@@ -83,6 +85,8 @@ export default class Player {
       this.lungeTarget = null;
       this.lungeTimer = 0;
           this.weaponSwitchHandler = new WeaponSwitchHandler(this);
+      this.slashDash = new SlashDash();
+      this.exaltedBlade = new ExaltedBlade();
     }
 
   // Backward compatibility getters/setters
@@ -179,12 +183,30 @@ export default class Player {
       dirY /= len;
     }
 
-    const rate = (moving ? this.acceleration : this.deceleration) * dt;
-    this.velocity.x = approach(this.velocity.x, dirX * this.moveSpeed, rate);
-    this.velocity.y = approach(this.velocity.y, dirY * this.moveSpeed, rate);
+    // Ability 1 (Slash Dash): pressing 1 charges toward the aim direction.
+    // While it runs, it moves the player instead of WASD.
+    const aimAngle = Math.atan2(mouseWorld.y - this.y, mouseWorld.x - this.x);
+    if (input.isKeyPressed(SLASH_DASH.key)) this.slashDash.activate(this, aimAngle);
+    // Abilities 2-4: Radial Blind, Radial Javelin, Exalted Blade (toggle)
+    if (input.isKeyPressed(RADIAL_BLIND.key)) castRadialBlind(this, enemies);
+    if (input.isKeyPressed(RADIAL_JAVELIN.key)) castRadialJavelin(this, enemies);
+    if (input.isKeyPressed(EXALTED_BLADE.key)) this.exaltedBlade.toggle(this);
+    this.exaltedBlade.update(dt, this);
+    // Blind wears off on its own clock; ticked here since enemies have no shared status tick yet
+    for (const enemy of enemies) {
+      if (enemy && enemy.blindTimer > 0) enemy.blindTimer -= dt;
+    }
 
-    this.x += this.velocity.x * dt;
-    this.y += this.velocity.y * dt;
+    if (this.slashDash.active) {
+      this.slashDash.update(dt, this, enemies);
+    } else {
+      const rate = (moving ? this.acceleration : this.deceleration) * dt;
+      this.velocity.x = approach(this.velocity.x, dirX * this.moveSpeed, rate);
+      this.velocity.y = approach(this.velocity.y, dirY * this.moveSpeed, rate);
+
+      this.x += this.velocity.x * dt;
+      this.y += this.velocity.y * dt;
+    }
 
     // Bullet Jump cooldown
     if (this.bulletJumpTimer > 0) this.bulletJumpTimer -= dt;
