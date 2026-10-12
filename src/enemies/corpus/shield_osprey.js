@@ -3,7 +3,7 @@ import { scaleStatByFaction } from '../../combat/scaling.js';
 
 export default class ShieldOsprey extends BaseEnemy {
   constructor(x, y, options = {}) {
-    super(x, y, { ...options, name: 'Shield Osprey', faction: 'corpus' });
+    super(x, y, { endoDropChance: 0.022764, endoAmount: 15, ...options, name: 'Shield Osprey', faction: 'corpus' });
     const maxHp = scaleStatByFaction(120, this.lvl, 'hp', this.faction);
     this.initHealth({ maxHp, armor: scaleStatByFaction(50, this.lvl, 'armor', this.faction) });
     this.hp = this.maxHp;

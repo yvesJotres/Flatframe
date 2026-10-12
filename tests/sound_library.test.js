@@ -3,8 +3,18 @@ import assert from 'node:assert/strict';
 import { SoundLibrary, soundLibrary } from '../src/engine/sound_library.js';
 import { audioManager } from '../src/engine/audio.js';
 import { SOUND_MANIFEST } from '../src/assets/sounds/manifest.js';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+
+// Every .js file under src/, recursively.
+function sourceFiles(dir) {
+  return readdirSync(dir).flatMap((entry) => {
+    const path = join(dir, entry);
+    if (statSync(path).isDirectory()) return sourceFiles(path);
+    return path.endsWith('.js') ? [path] : [];
+  });
+}
 
 test('library imports cleanly in Node and is browser-safe (no AudioContext)', () => {
   const lib = new SoundLibrary();
@@ -69,4 +79,22 @@ test('facade play() accepts legacy volume or an options object', () => {
 
 test('ready() resolves even in Node (no AudioContext)', async () => {
   await audioManager.ready(); // must not throw or hang
+});
+
+test('every literal audioManager.play("name") call names a registered sound', () => {
+  // A misspelled name is silently dropped at runtime (one console warning),
+  // so catch it here instead.
+  const srcDir = fileURLToPath(new URL('../src/', import.meta.url));
+  const callPattern = /audioManager\.play\(\s*'([^']+)'/g;
+  const unknown = [];
+  for (const file of sourceFiles(srcDir)) {
+    // Ignore commented-out calls (e.g. usage examples in the manifest header).
+    const text = readFileSync(file, 'utf8').replace(/^\s*\/\/.*$/gm, '');
+    for (const match of text.matchAll(callPattern)) {
+      if (!audioManager.library.has(match[1])) {
+        unknown.push(`${file.slice(srcDir.length)}: '${match[1]}'`);
+      }
+    }
+  }
+  assert.deepEqual(unknown, [], 'call sites reference unregistered sounds');
 });

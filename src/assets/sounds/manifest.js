@@ -33,6 +33,7 @@ export const SOUND_MANIFEST = {
   revive:         { file: sound('revive.ogg'),            category: 'sfx', volume: 0.8 },
   launcher_music: { file: sound('launcher_music.mp3'),    category: 'music', volume: 0.4 },
   ui_hover:       { file: sound('ui_hover.ogg'),          category: 'ui', volume: 0.4 },
+  ui_back:        { file: sound('ui_hover.ogg'),          category: 'ui', volume: 0.4 }, // reuses ui_hover until a dedicated file exists
   reload:         { file: sound('primary_reload.ogg'),    category: 'sfx', volume: 0.7 },
   ammo_collect:   { file: sound('ammo_collect.ogg'),      category: 'sfx', volume: 0.7, rate: [0.95, 1.05] },
   loot_pick:      { file: sound('loot_pick.ogg'),         category: 'sfx', volume: 0.7, rate: [0.95, 1.05] },

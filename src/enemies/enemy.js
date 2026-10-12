@@ -6,6 +6,9 @@ import HealthComponent from '../combat/health.js';
 import StatusManager from '../combat/status_manager.js';
 import { COLORS } from '../assets/colors.js';
 
+const COVER_SEARCH_M = [3, 7];  // default distance band (meters) to look for cover
+const COVER_SAMPLE_STEP = 16;   // world units between points when checking a line for walls
+
 export function isTargetAlive(target) {
   if (!target) return false;
   if (typeof target.alive === 'boolean') return target.alive;
@@ -37,6 +40,9 @@ export default class BaseEnemy {
     this.name = options.name ?? 'Enemy';
     this.lvl = Math.max(1, options.lvl ?? 1);
     this.faction = options.faction ?? 'unknown';
+    // Endo drop (per kill) and orb size from the wiki's enemy drop tables; unset falls back to loot.js defaults
+    this.endoDropChance = options.endoDropChance;
+    this.endoAmount = options.endoAmount;
 
     this.health = new HealthComponent({
       maxHp: options.maxHp ?? 100,
@@ -99,6 +105,9 @@ export default class BaseEnemy {
     this.grenadeTimer = 0;
     this.grenadeCooldown = options.grenadeCooldown ?? (8 + Math.random() * 6); // 8-14s between grenades
 
+    // Test control (the Simulacrum's PAUSE AI): the unit still takes damage and ticks its health,
+    // status and shield, but does not think, move or shoot
+    this.aiPaused = false;
   }
   
   initHealth(options) {
@@ -246,6 +255,12 @@ export default class BaseEnemy {
     }
 
     if (this.health.isDead) return;
+
+    if (this.aiPaused) {
+      this.velocity.x = 0;
+      this.velocity.y = 0;
+      return;
+    }
 
     // Target resolution
     const candidates = Array.isArray(target) ? target : [target];
@@ -466,6 +481,75 @@ export default class BaseEnemy {
     this.rotateTowards(targetAngle, dt);
   }
 
+  /** Wall lookup with a safe fallback for navmeshes that cannot answer it (treat as open ground). */
+  walkable(x, y) {
+    const nav = this.navMesh;
+    return nav?.isWalkableAt ? nav.isWalkableAt(x, y) : true;
+  }
+
+  /** True if any sampled point on the line a-b is inside a wall. */
+  lineBlocked(ax, ay, bx, by) {
+    if (!this.navMesh) return false;
+    const len = Math.hypot(bx - ax, by - ay);
+    const steps = Math.max(1, Math.floor(len / COVER_SAMPLE_STEP));
+    for (let i = 1; i < steps; i++) {
+      const f = i / steps;
+      if (!this.walkable(ax + (bx - ax) * f, ay + (by - ay) * f)) return true;
+    }
+    return false;
+  }
+
+  /** A walkable spot (default 3-7 m away) with a wall between it and the target: best place to wait. */
+  findCover(focus, bandM = COVER_SEARCH_M) {
+    if (!this.navMesh) return null;
+    let best = null;
+    let bestDist = Infinity;
+    for (let i = 0; i < 16; i++) {
+      const angle = (i / 16) * Math.PI * 2 + Math.random() * 0.3;
+      const dist = (bandM[0] + Math.random() * (bandM[1] - bandM[0])) * UNITS_PER_METER;
+      const x = this.x + Math.cos(angle) * dist;
+      const y = this.y + Math.sin(angle) * dist;
+      if (!this.walkable(x, y)) continue;
+      if (!this.lineBlocked(x, y, focus.x, focus.y)) continue;
+      // Prefer spots close to where we are now (short run to cover)
+      if (dist < bestDist) { bestDist = dist; best = { x, y }; }
+    }
+    return best;
+  }
+
+  /** Fallback when no cover exists: a point off to one side of the target so we keep moving. */
+  findFlankSpot(focus, bandM = COVER_SEARCH_M) {
+    const side = Math.random() < 0.5 ? 1 : -1;
+    const base = Math.atan2(this.y - focus.y, this.x - focus.x) + side * (Math.PI / 2.5);
+    const dist = (bandM[0] + Math.random() * (bandM[1] - bandM[0])) * UNITS_PER_METER;
+    const x = focus.x + Math.cos(base) * dist;
+    const y = focus.y + Math.sin(base) * dist;
+    if (this.navMesh && !this.walkable(x, y)) return null;
+    return { x, y };
+  }
+
+  /** Walk toward `spot`, following the navmesh path when there is one. Null `this.path` when the spot changes. */
+  moveToSpot(spot, dt, enemies) {
+    if (!spot) return this.applyVelocity(0, 0, dt, this.acceleration);
+    let tx = spot.x, ty = spot.y;
+    if (this.navMesh) {
+      if (!this.path || this.pathIndex >= this.path.length) {
+        this.path = this.navMesh.findPath(this.x, this.y, spot.x, spot.y);
+        this.pathIndex = 0;
+      }
+      if (this.path && this.path.length) {
+        const node = this.path[Math.min(this.pathIndex, this.path.length - 1)];
+        if (Math.hypot(node.x - this.x, node.y - this.y) < 24 && this.pathIndex < this.path.length - 1) this.pathIndex++;
+        tx = this.path[this.pathIndex].x;
+        ty = this.path[this.pathIndex].y;
+      }
+    }
+    const ddx = tx - this.x, ddy = ty - this.y;
+    const d = Math.hypot(ddx, ddy) || 1;
+    const push = this.separation(enemies);
+    this.applyVelocity(ddx / d + push.x * 0.5, ddy / d + push.y * 0.5, dt, this.acceleration);
+  }
+
   /** Smoothly rotate towards a target angle. */
   rotateTowards(targetAngle, dt) {
     let diff = targetAngle - this.angle;
@@ -504,12 +588,21 @@ export default class BaseEnemy {
     return { x: pushX, y: pushY };
   }
 
-  /** Fire once the aim delay elapses and the target is inside weapon range. */
+  /**
+   * How far this unit opens fire. A weapon with damage falloff (shotguns) stops at the end of
+   * its falloff: past that it still hits for half damage, so firing from across the arena is not wanted.
+   */
+  engageRange() {
+    const w = this.weapon;
+    return (w.falloff?.end ?? w.range) * UNITS_PER_METER;
+  }
+
+  /** Fire once the aim delay elapses and the target is inside engage range. */
   shoot(dt, target, projectiles) {
     if (!this.weapon) return;
 
     const distance = Math.hypot(target.x - this.x, target.y - this.y);
-    const inRange = distance <= this.weapon.range * UNITS_PER_METER;
+    const inRange = distance <= this.engageRange();
 
     this.weapon.update(dt, inRange);
     if (!inRange) {

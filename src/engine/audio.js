@@ -2,48 +2,23 @@
 //   audioManager.init()          (first user gesture, from game.js)
 //   audioManager.play(name, vol) (from weapons etc.)
 // while the real work happens in the shared soundLibrary
-// (src/core/sound_library.js) — file loading, category buses,
+// (src/engine/sound_library.js) — file loading, category buses,
 // volume mixing and procedural fallbacks.
 
 import { soundLibrary } from './sound_library.js';
 import { SOUND_MANIFEST } from '../assets/sounds/manifest.js';
-
-// Procedural gunshot (kept until a real file is added to the manifest).
-// Registered lazily so play() can generate it on first use.
-function createGunshot(ctx) {
-  const sampleRate = ctx.sampleRate;
-  const buffer = ctx.createBuffer(1, sampleRate * 0.08, sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < data.length; i++) {
-    const noise = (Math.random() * 2 - 1);
-    const decay = Math.exp(-i / (sampleRate * 0.012));
-    data[i] = noise * decay * 0.4;
-  }
-  return buffer;
-}
-
-// Procedural parry sound - metallic 'ting'
-function createParry(ctx) {
-  const sampleRate = ctx.sampleRate;
-  const duration = 0.15;
-  const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < data.length; i++) {
-    const t = i / sampleRate;
-    const freq = 2000 + 1500 * Math.exp(-t * 30); // descending pitch
-    const tone = Math.sin(2 * Math.PI * freq * t);
-    const decay = Math.exp(-t * 15);
-    data[i] = tone * decay * 0.3;
-  }
-  return buffer;
-}
+import { createGunshot, createParry, createCountdownTick, GUNSHOT_PROFILES } from './procedural_sounds.js';
 
 export class AudioManager {
   constructor() {
     this.library = soundLibrary;
     this.library.registerMany(SOUND_MANIFEST);
-    this.library.registerProcedural('gunshot', createGunshot);
+    this.library.registerProcedural('gunshot', (ctx) => createGunshot(ctx, GUNSHOT_PROFILES.default));
+    this.library.registerProcedural('braton_fire', (ctx) => createGunshot(ctx, GUNSHOT_PROFILES.braton));
     this.library.registerProcedural('ui_parry', createParry);
+    // No file: generated on first play, on the UI bus.
+    this.library.register('countdown_tick', { category: 'ui', volume: 0.6 });
+    this.library.registerProcedural('countdown_tick', createCountdownTick);
     this.loadPromise = null;
   }
 

@@ -53,37 +53,39 @@ function smoothstep(t) {
  * - levels 80+: use f2 (upper curve) 
  * - levels 70-80: smoothstep interpolation between f1 and f2
  */
-function dualCurve(baseValue, level, f1, f2) {
+function dualCurve(baseValue, level, f1, f2, round = Math.round) {
   const v1 = curve(baseValue, level, f1.coeff, f1.exponent);
-  
-  if (level <= TRANSITION_START) {
-    return Math.round(v1);
+  // Wiki (Health, Shield, Armor): the 70-80 transition is on the level difference from base level
+  const position = level - BASE_LEVEL;
+
+  if (position <= TRANSITION_START) {
+    return round(v1);
   }
   
   const v2 = curve(baseValue, level, f2.coeff, f2.exponent);
   
-  if (level >= TRANSITION_END) {
-    return Math.round(v2);
+  if (position >= TRANSITION_END) {
+    return round(v2);
   }
-  
+
   // Smoothstep interpolation between f1 and f2 in transition zone (70-80)
-  const t = (level - TRANSITION_START) / (TRANSITION_END - TRANSITION_START);
+  const t = (position - TRANSITION_START) / (TRANSITION_END - TRANSITION_START);
   const s = smoothstep(t);
-  return Math.round(v1 * (1 - s) + v2 * s);
+  return round(v1 * (1 - s) + v2 * s);
 }
 
 /**
  * Calculates a scaled stat based on the base value and level.
  * Wiki formulas use dual-curve interpolation.
  */
-export function scaleStat(baseValue, level, f1, f2) {
+export function scaleStat(baseValue, level, f1, f2, round = Math.round) {
   if (!f2) {
     // Backward compat: single curve
     if (level <= BASE_LEVEL) return baseValue;
     const growth = f1.coeff * Math.pow(level - BASE_LEVEL, f1.exponent);
     return Math.round(baseValue * (1 + growth));
   }
-  return dualCurve(baseValue, level, f1, f2);
+  return dualCurve(baseValue, level, f1, f2, round);
 }
 
 /**
@@ -97,8 +99,9 @@ export function scaleStat(baseValue, level, f1, f2) {
 export function scaleStatByFaction(baseValue, level, statType, faction) {
   if (statType === 'armor') {
     if (baseValue <= 0) return 0;
-    // Ref (Armor page): level-scaled initial armor is clamped to 200..2700
-    return Math.min(2700, Math.max(200, scaleStat(baseValue, level, ARMOR_SCALING.f1, ARMOR_SCALING.f2)));
+    // Ref (Armor page): level-scaled initial armor is clamped to 200..2700. The wiki's armor values
+    // are rounded down (checked against the Trooper calculator for levels 13-80)
+    return Math.min(2700, Math.max(200, scaleStat(baseValue, level, ARMOR_SCALING.f1, ARMOR_SCALING.f2, Math.floor)));
   }
   const params = FACTION_SCALING[faction]?.[statType] ?? FACTION_SCALING.grineer[statType];
   return scaleStat(baseValue, level, params.f1, params.f2);

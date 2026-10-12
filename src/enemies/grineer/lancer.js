@@ -1,5 +1,6 @@
 import BaseEnemy from '../enemy.js';
 import PrimaryWeapon from '../../weapons/primary_weapon.js';
+import Grenade from '../../weapons/grenade.js';
 import { scaleStatByFaction } from '../../combat/scaling.js';
 import { UNITS_PER_METER } from '../../engine/constants.js';
 
@@ -9,14 +10,23 @@ const ENEMY_WEAPON = 'Grakata';
 const BURST_SHOTS = [4, 7];          // shots per burst
 const REPOSITION_SEC = [1.2, 2.2];   // time allowed to get to the next spot
 const PAUSE_SEC = [0.6, 1.4];        // wait after arriving before the next burst
-const COVER_SEARCH_M = [3, 7];       // distance band (meters) to look for cover
-const SAMPLE_STEP = 16;              // world units between points when checking a line for walls
+
+// Wiki: from cover they sometimes blind-fire, with suffered accuracy
+const BLIND_CHANCE = 0.35;           // share of bursts fired blind from cover
+const BLIND_SPREAD_MULT = 3;         // widens the weapon's max spread while blind
+
+// Wiki: they occasionally throw grenades, more often from cover and at a target that stands still
+const GRENADE_RANGE_M = [4, 22];
+const GRENADE_WINDUP = 0.6;          // hesitate before throwing
+const STATIONARY_SPEED = 25;         // target slower than this (units/s) counts as standing still
 
 const rand = ([min, max]) => min + Math.random() * (max - min);
 
 export default class Lancer extends BaseEnemy {
   constructor(x, y, options = {}) {
-    super(x, y, { ...options, name: 'Lancer', faction: 'grineer' });
+    super(x, y, { endoDropChance: 0.00015, endoAmount: 80, name: 'Lancer', faction: 'grineer', ...options });
+        // Base 100 health and 100 armor. Armor is floored at 200 once scaled (see scaleStatByFaction),
+        // which is why the mission value is 200 at level 1
         const maxHp = scaleStatByFaction(100, this.lvl, 'hp', this.faction);
         this.initHealth({ maxHp, armor: scaleStatByFaction(100, this.lvl, 'armor', this.faction) });
     this.hp = this.maxHp;
@@ -26,9 +36,12 @@ export default class Lancer extends BaseEnemy {
     this.isNewlySpawned = true;
 
     // Kiting rifleman with burst fire and cover; see behavior() below.
-    this.equip(new PrimaryWeapon(options.weapon ?? ENEMY_WEAPON));
+    // Subclasses (Trooper) pass their own weapon instance
+    this.equip(options.weapon ?? new PrimaryWeapon(ENEMY_WEAPON));
     // First sighting: move to a spot (cover if any) right away instead of standing still
-    this.tactic = { phase: 'reposition', timer: rand(REPOSITION_SEC), shotsLeft: 0, spot: null, lastShot: 0 };
+    this.tactic = { phase: 'reposition', timer: rand(REPOSITION_SEC), shotsLeft: 0, spot: null, inCover: false, blind: false, lastShot: 0, resume: null };
+    this.focusSpeed = 0;
+    this.lastFocus = null;
   }
 
   behavior(dt, focus, projectiles, enemies) {
@@ -37,7 +50,21 @@ export default class Lancer extends BaseEnemy {
     const dx = focus.x - this.x;
     const dy = focus.y - this.y;
     const distance = Math.hypot(dx, dy);
-    const inRange = distance <= this.weapon.range * UNITS_PER_METER;
+    const inRange = distance <= this.engageRange();
+
+    this.trackFocus(dt, focus);
+    if (t.phase === 'throw') return this.throwGrenade(dt, focus, projectiles, dx, dy);
+
+    // Grenades come more often from cover and when the target stands still
+    const rate = (t.inCover ? 2 : 1) * (this.focusSpeed < STATIONARY_SPEED ? 1.5 : 1);
+    this.grenadeTimer = Math.min(this.grenadeTimer + dt * rate, this.grenadeCooldown);
+    const meters = distance / UNITS_PER_METER;
+    if (t.phase !== 'burst' && this.grenadeTimer >= this.grenadeCooldown && meters >= GRENADE_RANGE_M[0] && meters <= GRENADE_RANGE_M[1]) {
+      t.resume = t.phase;
+      t.phase = 'throw';
+      t.timer = GRENADE_WINDUP;
+      return;
+    }
 
     if (t.phase === 'burst') {
       // Count shots by watching the weapon's fire timestamp
@@ -57,9 +84,9 @@ export default class Lancer extends BaseEnemy {
     this.aimTime = 0;
 
     if (t.phase === 'reposition') {
-      if (!t.spot) t.spot = this.findCover(focus) ?? this.findFlankSpot(focus);
+      if (!t.spot) this.chooseSpot(focus);
       t.timer -= dt;
-      this.moveAlong(dt, enemies);
+      this.moveToSpot(t.spot, dt, enemies);
       this.face(dt, dx, dy);
       if (t.timer <= 0 || (t.spot && Math.hypot(t.spot.x - this.x, t.spot.y - this.y) < 14)) {
         t.phase = 'pause';
@@ -77,89 +104,68 @@ export default class Lancer extends BaseEnemy {
       t.phase = 'burst';
       t.shotsLeft = Math.round(rand(BURST_SHOTS));
       t.lastShot = this.weapon.lastFireTime;
+      // From cover, some bursts are fired blind (wider spread)
+      t.blind = t.inCover && Math.random() < BLIND_CHANCE;
+      this.setSpreadMultiplier(t.blind ? BLIND_SPREAD_MULT : 1);
     }
+  }
+
+  /** Cover if there is any nearby, otherwise a flank spot. */
+  chooseSpot(focus) {
+    const t = this.tactic;
+    const cover = this.findCover(focus);
+    t.spot = cover ?? this.findFlankSpot(focus);
+    t.inCover = !!cover;
   }
 
   startReposition(focus) {
     const t = this.tactic;
     t.phase = 'reposition';
     t.timer = rand(REPOSITION_SEC);
-    t.spot = this.findCover(focus) ?? this.findFlankSpot(focus);
+    this.chooseSpot(focus);
+    this.setSpreadMultiplier(1);
     this.path = null;
   }
 
-  /** Wall lookup with a safe fallback for navmeshes that cannot answer it (treat as open ground). */
-  walkable(x, y) {
-    const nav = this.navMesh;
-    return nav?.isWalkableAt ? nav.isWalkableAt(x, y) : true;
-  }
-
-  /** A walkable spot 3-7 m away with a wall between it and the target: best place to wait. */
-  findCover(focus) {
-    const nav = this.navMesh;
-    if (!nav) return null;
-    let best = null;
-    let bestScore = Infinity;
-    for (let i = 0; i < 16; i++) {
-      const angle = (i / 16) * Math.PI * 2 + Math.random() * 0.3;
-      const dist = rand(COVER_SEARCH_M) * UNITS_PER_METER;
-      const x = this.x + Math.cos(angle) * dist;
-      const y = this.y + Math.sin(angle) * dist;
-      if (!this.walkable(x, y)) continue;
-      if (!this.lineBlocked(x, y, focus.x, focus.y)) continue;
-      // Prefer spots close to where we are now (short run to cover)
-      const score = dist;
-      if (score < bestScore) { bestScore = score; best = { x, y }; }
-    }
-    return best;
-  }
-
-  /** Fallback when no cover exists: a point off to one side so we keep moving. */
-  findFlankSpot(focus) {
-    const nav = this.navMesh;
-    const side = Math.random() < 0.5 ? 1 : -1;
-    const base = Math.atan2(this.y - focus.y, this.x - focus.x) + side * (Math.PI / 2.5);
-    const dist = rand(COVER_SEARCH_M) * UNITS_PER_METER;
-    const x = focus.x + Math.cos(base) * dist;
-    const y = focus.y + Math.sin(base) * dist;
-    if (nav && !this.walkable(x, y)) return null;
-    return { x, y };
-  }
-
-  /** True if any sampled point on the line a-b is inside a wall. */
-  lineBlocked(ax, ay, bx, by) {
-    const nav = this.navMesh;
-    if (!nav) return false;
-    const len = Math.hypot(bx - ax, by - ay);
-    const steps = Math.max(1, Math.floor(len / SAMPLE_STEP));
-    for (let i = 1; i < steps; i++) {
-      const f = i / steps;
-      if (!this.walkable(ax + (bx - ax) * f, ay + (by - ay) * f)) return true;
-    }
-    return false;
-  }
-
-  /** Walk toward the reposition spot, following the navmesh path when there is one. */
-  moveAlong(dt, enemies) {
+  /** Wind up, then lob a grenade at the target's current position, then go back to what it was doing. */
+  throwGrenade(dt, focus, projectiles, dx, dy) {
     const t = this.tactic;
-    if (!t.spot) return this.applyVelocity(0, 0, dt, this.acceleration);
-    let tx = t.spot.x, ty = t.spot.y;
-    if (this.navMesh) {
-      if (!this.path || this.pathIndex >= this.path.length) {
-        this.path = this.navMesh.findPath(this.x, this.y, t.spot.x, t.spot.y);
-        this.pathIndex = 0;
-      }
-      if (this.path && this.path.length) {
-        const node = this.path[Math.min(this.pathIndex, this.path.length - 1)];
-        if (Math.hypot(node.x - this.x, node.y - this.y) < 24 && this.pathIndex < this.path.length - 1) this.pathIndex++;
-        tx = this.path[this.pathIndex].x;
-        ty = this.path[this.pathIndex].y;
-      }
+    this.weapon.update(dt, false);
+    this.aimTime = 0;
+    this.applyVelocity(0, 0, dt, this.acceleration);
+    this.rotateTowards(Math.atan2(dy, dx), dt);
+    t.timer -= dt;
+    if (t.timer > 0) return;
+
+    projectiles.push(new Grenade(this.x, this.y, focus.x, focus.y, { targets: [focus] }));
+    this.grenadeTimer = 0;
+    this.grenadeCooldown = 8 + Math.random() * 6;
+    if (t.resume === 'pause') {
+      t.phase = 'pause';
+      t.timer = rand(PAUSE_SEC);
+    } else {
+      t.phase = 'reposition';
+      t.timer = rand(REPOSITION_SEC);
     }
-    const ddx = tx - this.x, ddy = ty - this.y;
-    const d = Math.hypot(ddx, ddy) || 1;
-    const push = this.separation(enemies);
-    this.applyVelocity(ddx / d + push.x * 0.5, ddy / d + push.y * 0.5, dt, this.acceleration);
+  }
+
+  /** Smoothed speed of whoever we are shooting at, for the grenade rate. */
+  trackFocus(dt, focus) {
+    if (this.lastFocus === focus && dt > 0) {
+      const speed = Math.hypot(focus.x - this.lastFocusX, focus.y - this.lastFocusY) / dt;
+      this.focusSpeed += (speed - this.focusSpeed) * Math.min(1, dt * 3);
+    } else {
+      this.focusSpeed = 0;
+    }
+    this.lastFocus = focus;
+    this.lastFocusX = focus.x;
+    this.lastFocusY = focus.y;
+  }
+
+  /** Scales the weapon's max spread from its data (1 = normal). */
+  setSpreadMultiplier(mult) {
+    const base = this.weapon.attack.maxSpread;
+    this.weapon.maxSpread = base * mult;
   }
 
   face(dt, dx, dy) {

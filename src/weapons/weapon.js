@@ -7,6 +7,17 @@ function totalDamage(damage = {}) {
   return Object.values(damage).reduce((sum, value) => sum + value, 0);
 }
 
+// Damage falloff: full damage up to `start` metres, a linear drop to `minMultiplier` at `end`, then flat.
+// Weapons without falloff data always return 1.
+export function falloffMultiplier(falloff, distanceMeters) {
+  if (!falloff) return 1;
+  const { start, end, minMultiplier } = falloff;
+  if (distanceMeters <= start) return 1;
+  if (distanceMeters >= end) return minMultiplier;
+  const t = (distanceMeters - start) / (end - start);
+  return 1 - (1 - minMultiplier) * t;
+}
+
 function rotateDirection(x, y, angle) {
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
@@ -44,6 +55,7 @@ export default class Weapon {
     this.maxSpread = attack.maxSpread ?? this.minSpread;
     this.critChance = attack.critChance ?? 0;
     this.critMultiplier = attack.critMultiplier ?? 1;
+    this.falloff = attack.falloff ?? null; // { start, end, minMultiplier } in meters, see falloffMultiplier()
     this.statusChance = attack.statusChance ?? 0;
     this.shotType = attack.shotType ?? 'projectile';
     this.currentSpread = this.minSpread;
@@ -113,7 +125,7 @@ export default class Weapon {
       const spreadSign = Math.random() < 0.5 ? -1 : 1;
       const spreadRad = ((this.currentSpread * Math.PI) / 180) * Math.random() * spreadSign;
       const direction = rotateDirection(baseX, baseY, spreadRad);
-      const hit = this.rollHit();
+      const hit = this.rollHit(aimDistance / UNITS_PER_METER);
       hit.sourceX = player.x;
       hit.sourceY = player.y;
 
@@ -141,9 +153,9 @@ export default class Weapon {
     );
   }
 
-  rollHit() {
+  rollHit(distanceMeters = 0) {
     const crit = Math.random() < this.critChance;
-    const multiplier = crit ? this.critMultiplier : 1;
+    const multiplier = (crit ? this.critMultiplier : 1) * falloffMultiplier(this.falloff, distanceMeters);
     const impact = (this.damage.impact ?? 0) * multiplier;
     const puncture = (this.damage.puncture ?? 0) * multiplier;
     const slash = (this.damage.slash ?? 0) * multiplier;

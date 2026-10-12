@@ -48,6 +48,14 @@ export default class Projectile {
   update(dt, defaultTargets = []) {
     if (!this.active) return;
 
+    // Hitscan tracer phase: the shot already landed (or ran out of range), only the fade remains.
+    // Without this the shot would be tested against its target again next frame and deal damage twice.
+    if (this.isHitscan && this.hitscanTimer > 0) {
+      this.hitscanTimer -= dt;
+      if (this.hitscanTimer <= 0) this.active = false;
+      return;
+    }
+
     const targets = this.targets ?? defaultTargets;
     const remaining = this.maxDistance - this.distanceTravelled;
     const stepDistance = Math.min(this.speed * dt, remaining);
@@ -78,7 +86,7 @@ export default class Projectile {
         if (this.punchThrough > 0) {
           this.punchThrough -= 1;
         } else {
-          this.active = false;
+          this.land();
           return;
         }
       }
@@ -144,31 +152,24 @@ export default class Projectile {
         if (this.punchThrough > 0) {
           this.punchThrough -= 1;
         } else {
-          this.active = false;
+          this.land();
           return;
         }
       }
     }
 
-    if (this.distanceTravelled >= this.maxDistance) {
-          // Hitscan: show tracer even on miss
-          if (this.isHitscan) {
-            this.hitscanTimer = this.hitscanDuration;
-          } else {
-            this.active = false;
-          }
-        }
+    // Out of range: a hitscan still shows its tracer on a miss
+    if (this.distanceTravelled >= this.maxDistance) this.land();
+  }
 
-        // Hitscan: fade out tracer after hit or miss
-        if (this.isHitscan && this.hitscanTimer > 0) {
-          this.hitscanTimer -= dt;
-          if (this.hitscanTimer <= 0) {
-            this.active = false;
-          }
-        }
+  /** The shot is spent: a hitscan keeps its tracer for a moment (faded at the top of update), anything else ends. */
+  land() {
+    if (this.isHitscan) this.hitscanTimer = this.hitscanDuration;
+    else this.active = false;
   }
 
   draw(ctx) {
+    if (!this.active) return; // a spent shot is never drawn, even if nothing has pruned it yet
     ctx.save();
     ctx.fillStyle = this.color;
     ctx.strokeStyle = this.color;

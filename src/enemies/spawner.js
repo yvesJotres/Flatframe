@@ -1,6 +1,11 @@
 import Lancer from './grineer/lancer.js';
+import Trooper from './grineer/trooper.js';
+import Butcher from './grineer/butcher.js';
 import Crewman from './corpus/crewman.js';
 import { waveSize } from '../missions/missions.js';
+
+// Enemy classes a mission's enemyPool can name
+const ENEMY_CLASSES = { crewman: Crewman, trooper: Trooper, lancer: Lancer, butcher: Butcher };
 
 // ---- Old-sig exports (matching game.js globals) ----
 // game.js calls: spawnEnemy(lvl) and updateSpawns(dt)
@@ -26,8 +31,10 @@ export function spawnEnemy(lvl = 1) {
   }
 
   let enemy;
-  if (_mission && _mission.id === 'exterminate') {
-    enemy = new Crewman(x, y, { lvl: lvl || 1 });
+  if (_mission && _mission.family === 'exterminate') {
+    const pool = _mission.enemyPool ?? ['crewman'];
+    const EnemyClass = ENEMY_CLASSES[pool[Math.floor(Math.random() * pool.length)]];
+    enemy = new EnemyClass(x, y, { lvl: lvl || 1 });
   } else {
     enemy = new Lancer(x, y, { lvl: lvl || 1 });
   }
@@ -42,7 +49,7 @@ export function updateSpawns(dt) {
   _spawnTimer += dt;
   const interval = _mission.spawnInterval ?? 1.1;
 
-  if (_mission.id === 'exterminate') {
+  if (_mission.family === 'exterminate') {
     const level = 1 + Math.floor(_kills / (_mission.levelPerKills ?? 8));
     if (_kills + _enemies.length < _mission.killQuota && _enemies.length < _mission.maxEnemies) {
       if (_spawnTimer >= interval) { _spawnTimer = 0; spawnEnemy(level); }
