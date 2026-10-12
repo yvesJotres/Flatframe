@@ -31,6 +31,7 @@ export class TouchControls {
     document.body.classList.add('touch-device');
     this.addRotatePrompt();
     this.enableFullscreenOnFirstTap();
+    this.keepScreenAwake();
     this.aim = null; // {dx, dy} unit vector while right stick is held
     this.loop = this.loop.bind(this);
     requestAnimationFrame(this.loop);
@@ -43,7 +44,7 @@ export class TouchControls {
       <div class="tc-stick tc-left"><div class="tc-knob"></div></div>
       <div class="tc-stick tc-right"><div class="tc-knob"></div></div>
       <div class="tc-buttons">
-        <button data-key="e">MELEE</button>
+        <button data-key="e" data-melee="1">MELEE</button>
         <button data-mouse="middleDown">HEAVY</button>
         <button data-mouse="rightDown">PARRY</button>
         <button data-key="r">RELOAD</button>
@@ -68,6 +69,12 @@ export class TouchControls {
       const press = (e) => {
         e.preventDefault();
         btn.classList.add('active');
+        // Melee is equipped by holding F; a tap on MELEE while ranged is out holds it for the switch handler
+        if (btn.dataset.melee && this.hooks.isMeleeEquipped && !this.hooks.isMeleeEquipped()) {
+          this.keyDown('f');
+          setTimeout(() => this.keyUp('f'), 260);
+          return;
+        }
         if (btn.dataset.key) btn.dataset.key.split(',').forEach((k) => this.keyDown(k));
         if (btn.dataset.mouse) this.input.mouse[btn.dataset.mouse] = true;
       };
@@ -88,87 +95,45 @@ export class TouchControls {
     const el = document.createElement('div');
     el.id = 'rotate-prompt';
     el.innerHTML = '<div class="rp-icon">&#x21bb;</div><div>Rotate your phone to landscape</div><div class="rp-sub">or tap to go fullscreen</div>';
-    // Tapping the prompt after a triple-tap exit goes back to landscape
-    // Tapping it always gets you into the game: after a triple-tap release it re-locks landscape;
-    // on first load it just goes fullscreen and hides the prompt for this session (portrait still works)
     // The tap that dismisses the prompt must not also select something in the menu behind it
     for (const type of ['mousedown', 'mouseup', 'touchstart', 'touchend', 'pointerdown', 'pointerup']) {
       el.addEventListener(type, (e) => e.stopPropagation());
     }
     el.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (this.landscapeReleased && performance.now() - this.releasedAt > 700) this.resumeLandscape(true);
-      else {
-        document.body.classList.add('rotate-dismissed');
-        this.enterFullscreen();
-      }
+      document.body.classList.add('rotate-dismissed');
+      this.enterFullscreen();
     });
     document.body.appendChild(el);
-    this.watchOrientation();
-  }
-
-  // Back in landscape after a release (phone rotated back) -> hide the prompt again
-  watchOrientation() {
-    const mq = window.matchMedia('(orientation: portrait)');
-    mq.addEventListener('change', () => {
-      if (!this.landscapeReleased) return;
-      if (mq.matches) this.seenPortrait = true;
-      else if (this.seenPortrait) this.resumeLandscape(false);
-    });
   }
 
   // Browsers only allow fullscreen + orientation lock from a user gesture, so retry on
   // every tap while not fullscreen (e.g. after the player swipes out of it).
   // Installed to the home screen, manifest.webmanifest opens it in landscape directly.
   enableFullscreenOnFirstTap() {
-    const go = async () => {
-      // After a triple-tap exit, stay out of landscape until the next mission starts
-      if (this.landscapeReleased || document.fullscreenElement) return;
-      try {
-        await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' });
-        await screen.orientation?.lock?.('landscape');
-      } catch { /* not supported or denied: game still works in the browser UI */ }
-    };
-    window.addEventListener('touchend', go);
-    this.enableTripleTapExit();
-  }
-
-  // Triple-tap on any menu, the pause screen or a results screen releases the landscape lock and leaves
-  // fullscreen, then shows the first-load "Rotate your phone to landscape" screen.
-  enableTripleTapExit() {
-    this.landscapeReleased = false;
-    let taps = [];
-    window.addEventListener('touchend', () => {
-      if (!this.hooks.canExitLandscape?.()) { taps = []; return; }
-      const now = performance.now();
-      taps = taps.filter(t => now - t < 600).concat(now);
-      if (taps.length >= 3) { taps = []; this.releaseLandscape(); }
+    window.addEventListener('touchend', async () => {
+      if (document.fullscreenElement) return;
+      await this.enterFullscreen();
     });
   }
 
-  // Back to the first-load state: leave fullscreen, free the rotation, and show the
-  // "Rotate your phone to landscape" screen until the player returns to landscape.
-  async releaseLandscape() {
-    this.landscapeReleased = true;
-    this.releasedAt = performance.now();
-    this.seenPortrait = window.matchMedia('(orientation: portrait)').matches;
-    document.body.classList.add('landscape-released');
-    try { screen.orientation?.unlock?.(); } catch { /* unsupported */ }
-    try { if (document.fullscreenElement) await document.exitFullscreen(); } catch { /* ignore */ }
+  // Browsers release the wake lock when the page is hidden and need a user gesture to take it again
+  keepScreenAwake() {
+    let lock = null;
+    const acquire = async () => {
+      if (lock && !lock.released) return;
+      try { lock = await navigator.wakeLock?.request('screen'); } catch { /* unsupported or denied */ }
+    };
+    window.addEventListener('touchend', acquire);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') acquire();
+    });
   }
 
-  // fromTap: called from a tap, so fullscreen + landscape lock are allowed right now
-  async resumeLandscape(fromTap) {
-    this.landscapeReleased = false;
-    document.body.classList.remove('landscape-released');
-    if (!fromTap) return; // the next tap re-locks (browsers need a tap for fullscreen)
-    await this.enterFullscreen(true);
-  }
-
-  async enterFullscreen(lock = true) {
+  async enterFullscreen() {
     try {
       await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' });
-      if (lock) await screen.orientation?.lock?.('landscape');
+      await screen.orientation?.lock?.('landscape');
     } catch { /* not supported or denied: the game still works in the browser UI */ }
   }
 

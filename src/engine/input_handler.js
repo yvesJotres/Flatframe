@@ -5,10 +5,17 @@ export class InputHandler {
     this.pressedKeys = {};
     this.mouse = { x: 0, y: 0, down: false, rightDown: false, middleDown: false };
     this.mouseClicked = false;
+    this.mouseInside = false; // false until the pointer moves over the window
+
+    // iOS only turns taps into mouse events on elements it considers clickable (one with its own click
+    // handler); the window-level listeners below don't count, so without this the canvas ignores taps on iPad
+    canvas.addEventListener('click', () => {});
 
     window.addEventListener('keydown', this.handleKeyDown.bind(this));
     window.addEventListener('keyup', this.handleKeyUp.bind(this));
-    window.addEventListener('mousemove', (e) => this.updateMousePos(e));
+    window.addEventListener('mousemove', (e) => { this.mouseInside = true; this.updateMousePos(e); });
+    // The pointer has left the window: its last position is no longer where the mouse is
+    window.addEventListener('mouseout', (e) => { if (!e.relatedTarget) this.mouseInside = false; });
 
     window.addEventListener('mousedown', (e) => {
       // Taps and some clicks arrive without a preceding mousemove
