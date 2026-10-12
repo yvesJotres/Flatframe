@@ -27,6 +27,19 @@ import { damageNumbersManager } from './combat/damage_numbers.js';
 import { initPrimaryWeapons } from './weapons/primary_weapon.js';
 import { initSecondaryWeapons } from './weapons/secondary_weapon.js';
 import { initMeleeWeapons } from './weapons/melee_weapon.js';
+import { initWarframes } from './warframe/warframes.js';
+import { wallet } from './economy/wallet.js';
+import { startCurrencyToasts } from './ui/currency_toast.js';
+import { installDebugCheats } from './debug/cheats.js';
+import { openUserPanel } from './ui/user_panel.js';
+import { openLoginScreen } from './ui/login_screen.js';
+import { openSquad, closeSquad, isSquadOpen, syncModeDrop, SQUAD_MODE_BOX } from './ui/squad.js';
+import { liveModeBox } from './ui/menus/top_bar.js';
+import { setMenuPointer } from './ui/menus/menu_style.js';
+import { installLayoutEditor } from './debug/layout_editor.js';
+import { isSignedIn } from './user/auth.js';
+import { ensureAdminUser } from './user/accounts.js';
+import { creditReward } from './economy/rewards.js';
 
 window.onerror = function (msg, url, lineNo, columnNo, error) {
   console.error('[GLOBAL ERROR]:', { msg, url, lineNo, columnNo, error });
@@ -47,6 +60,8 @@ loading.set(0.6, 'Loading secondary weapons…');
 await initSecondaryWeapons();
 loading.set(0.75, 'Loading melee weapons…');
 await initMeleeWeapons();
+loading.set(0.8, 'Loading warframes…');
+await initWarframes();
 loading.set(0.9, 'Preparing the Origin System…');
 
 // Short screens (phones in landscape) render the canvas at a higher internal
@@ -54,13 +69,18 @@ loading.set(0.9, 'Preparing the Origin System…');
 // (and sharper on high-DPI phones). 1 = desktop size.
 let uiScale = 1;
 function resizeCanvas() {
-  const h = window.innerHeight;
+  // Size from the container, which covers the whole screen (window.innerHeight is short on iPad full-screen apps)
+  const box = canvas.parentElement.getBoundingClientRect();
+  const w = box.width || window.innerWidth;
+  const h = box.height || window.innerHeight;
   uiScale = h < 600 ? Math.max(0.75, h / 560) : 1;
-  canvas.width = Math.round(window.innerWidth / uiScale);
+  canvas.width = Math.round(w / uiScale);
   canvas.height = Math.round(h / uiScale);
   document.documentElement.style.setProperty('--ui-scale', uiScale);
 }
 window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', resizeCanvas);
+window.visualViewport?.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 const menuMusic = createMenuMusic({ audio: audioManager, name: 'launcher_music' });
@@ -75,9 +95,24 @@ window.addEventListener('keydown', unlockAudio);
 
 const inputHandler = new InputHandler(canvas);
 // One close (×) button for every menu screen (acts like Escape); also handles Android's back gesture
+startCurrencyToasts();
+// Console cheats (src/debug/cheats.js): the hooks reach into this file's mission state
+installDebugCheats({
+  winMission: () => {
+    if (screen !== 'playing' || !mission) return 'No mission running';
+    awardMissionCredits();
+    showOutcome('complete');
+    return 'Mission won';
+  },
+  killAll: () => {
+    for (const e of enemies) e.takeDamage(1e9); // dead enemies drop loot on the next update
+    return `Killed ${enemies.length} enemies`;
+  },
+});
 new BackButton(inputHandler, {
   // Hidden during live gameplay (missions and the arena with the spawner closed); shown on menus and the spawner
-  isVisible: () => !['playing', 'main-menu'].includes(screen) && !gameExited
+  // The Arsenal draws its own Back button in the bottom-right corner instead
+  isVisible: () => !['playing', 'main-menu', 'arsenal', 'navigation'].includes(screen) && !gameExited
     && !(screen === 'simulacrum' && !simulacrumMenu.visible),
   handlesSystemBack: () => screen !== 'main-menu',
 });
@@ -115,19 +150,19 @@ if (touchSetting === 'On' || (touchSetting === 'Auto' && isTouchDevice())) {
   new TouchControls(inputHandler, {
     // Live play (missions and the Simulacrum arena with the spawner closed): stick aim and moves apply
     isPlaying: () => (screen === 'playing' && !pauseMenu.visible) || (screen === 'simulacrum' && !simulacrumMenu.visible),
-    // Triple-tap exits landscape anywhere outside live gameplay: every menu, the pause screen, mission results
     mode: () => {
       if (screen === 'simulacrum') return simulacrumMenu.visible ? 'sim-menu' : 'sim-play';
       return screen === 'playing' && !pauseMenu.visible ? 'play' : 'menu';
     },
-    canExitLandscape: () => !(screen === 'playing' && !pauseMenu.visible) && !(screen === 'simulacrum' && !simulacrumMenu.visible),
     getPlayerScreenPos: () => (player ? { x: player.x - camera.x, y: player.y - camera.y } : null),
+    isMeleeEquipped: () => !!player && player.currentWeapon === player.meleeWeapon,
   });
 }
 const hud = new Hud();
 const pauseMenu = new PauseMenu();
 const missionSelect = new MissionSelect();
 const navigation = new Navigation(startMission);
+installLayoutEditor(navigation); // debug tool: drag missions to set their positions
 // Opens the Simulacrum test arena (from the Navigation screen button or the main menu)
 function startSimulacrum() {
   screen = 'simulacrum';
@@ -167,25 +202,13 @@ navigation.onTabSwitch = (tab) => {
   }
 };
 const arsenal = new Arsenal();
-arsenal.onTabSwitch = (tab) => {
-  if (tab === 'navigation') {
-    navigation.handleResize(canvas);
-    navigation.openScreen();
-    screen = 'navigation';
-    arsenal.close();
-    hud.setVisible(false);
-  } else if (tab === 'profile') {
-    profile.openScreen();
-    screen = 'profile';
-    arsenal.close();
-    hud.setVisible(false);
-  } else if (tab === 'settings') {
-    settings.openScreen();
-    screen = 'settings';
-    arsenal.close();
-    hud.setVisible(false);
-  }
-};
+arsenal.onProfile = () => openUserPanel();
+// The squad panel: one panel for every squad icon. Anchored under the squad-mode icon, so it is small here.
+navigation.onSquad = (anchor) => openSquad({ size: 'small', anchor });
+arsenal.onSquad = (anchor) => openSquad({ size: 'small', anchor });
+ensureAdminUser();
+// Plain HTTP (e.g. the iPad over Tailscale) can't hash passwords, so sign-in is skipped there
+if (window.isSecureContext && !isSignedIn()) openLoginScreen();
 const profile = new Profile(() => {
   navigation.handleResize(canvas);
   navigation.openScreen();
@@ -217,13 +240,22 @@ profile.onTabSwitch = (tab) => {
   }
 };
 
+// Settings can be opened from the pause menu during a mission; closing it then returns to the paused mission
+let settingsFromPause = false;
 const settings = new Settings(() => {
+  if (settingsFromPause) {
+    settingsFromPause = false;
+    screen = 'playing';
+    pauseMenu.open();
+    return;
+  }
   navigation.handleResize(canvas);
   navigation.openScreen();
   screen = 'navigation';
   hud.setVisible(false);
 });
 settings.onTabSwitch = (tab) => {
+  if (settingsFromPause) return; // no other screens from inside a mission
   if (tab === 'arsenal') {
     screen = 'arsenal';
     arsenal.open({
@@ -248,6 +280,7 @@ settings.onTabSwitch = (tab) => {
   }
   };
   const mainMenu = new MainMenu();
+  mainMenu.onSquad = (anchor) => openSquad({ size: 'small', anchor }); // same panel as navigation and Arsenal
   const simulacrumMenu = new SimulacrumMenu();
   const wipScreen = new WorkInProgressScreen(() => {
     if (screen === 'arsenal') {
@@ -301,6 +334,7 @@ damageNumbersManager.setTransform((worldX, worldY) => {
 
 let player = null, enemies = [], loot = [], projectiles = [], objective = null;
 let screen = 'main-menu', mission = null, kills = 0, elapsed = 0, currentWave = 1;
+let missionNode = null; // { planet, node } of the star-chart node being played, for marking it complete on a win
 let waveEnemiesSpawned = 0, waveEnemiesTotal = 0, waveTimer = 0, spawnTimer = 0, lastTimestamp = 0, gameExited = false;
 
 // Camera
@@ -379,6 +413,22 @@ function drawGrid() {
 }
 
 
+// Draws the world through the camera. Missions and the Simulacrum share this, so they look and behave the same.
+function renderWorld() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(-camera.x, -camera.y);
+  drawGrid();
+
+  if (objective) objective.draw(ctx);
+  for (const enemy of enemies) enemy.draw(ctx);
+  if (player.alive || player.isBleedingOut) player.draw(ctx);
+  for (const p of projectiles) p.draw(ctx);
+  for (const l of loot) l.draw(ctx);
+
+  ctx.restore();
+}
+
 function updateWorld(dt, { withMission = false } = {}) {
   player.update(dt, inputHandler, projectiles, enemies, camera);
   clampToArena(player);
@@ -418,6 +468,14 @@ function updateWorld(dt, { withMission = false } = {}) {
     projectiles = projectiles.filter((p) => p.active);
 }
 
+// Credits paid for the mission just won (0 when none), shown on the complete screen
+let lastCreditReward = 0;
+
+function awardMissionCredits() {
+  lastCreditReward = creditReward(mission);
+  if (lastCreditReward > 0) wallet.add('credits', lastCreditReward);
+}
+
 function missionFailed() {
   if (!player.alive) return true;
   return !!(objective && !objective.alive);
@@ -425,7 +483,7 @@ function missionFailed() {
 
 function missionWon() {
   if (!mission) return false;
-  if (mission.id === 'exterminate') return kills >= mission.killQuota;
+  if (mission.family === 'exterminate') return kills >= mission.killQuota;
   // Defense & Survival are endless — they only "win" when player manually extracts
   // (handled via UI, not automatic). Return false here; completion screen triggered by extraction choice.
   return false;
@@ -442,7 +500,14 @@ async function loadMissionMap(missionMap) {
 }
 
 async function startMission(missionId) {
-  mission = getMission(missionId);
+  // The star chart passes its full launch object (with the planet and node it came from);
+  // retries pass the bare id again, so keep the node for the same mission
+  const launch = typeof missionId === 'string' ? null : missionId;
+  const id = launch ? launch.id : missionId;
+  if (launch) missionNode = { planet: launch.planet, node: launch.node };
+  else if (!mission || mission.id !== id) missionNode = null;
+  mission = getMission(id);
+  lastCreditReward = 0;
   screen = 'playing';
   player = new Player(canvas.width / 2, canvas.height / 2, arsenal.currentLoadout);
   enemies = []; loot = []; projectiles = []; kills = 0; elapsed = 0;
@@ -500,7 +565,7 @@ function updateHud(dt) {
   hud.updateDev(player);
   if (player.isBleedingOut) return;
   let primary = '', detail = '', progress = null;
-  if (mission.id === 'exterminate') {
+  if (mission.family === 'exterminate') {
     primary = `${mission.objectiveLabel} ${kills} / ${mission.killQuota}`;
     detail = `Enemies ${enemies.length} / ${mission.maxEnemies}`;
     progress = kills / mission.killQuota;
@@ -526,7 +591,17 @@ function gameLoop(timestamp) {
     const dt = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
     lastTimestamp = timestamp;
 
+    // Escape closes the squad panel first; the screen behind it does not see that key
+    if (isSquadOpen() && inputHandler.isKeyPressed('escape')) closeSquad();
+
+    // Damage numbers only move during a fight. Leaving one clears them, so none stay frozen on a menu
+    if (screen !== 'playing' && screen !== 'simulacrum' && damageNumbersManager.numbers.length) damageNumbersManager.clear();
+
     menuMusic.sync(screen, gameExited);
+    // The matchmaking list on hover: the main menu's icons are 54px, the other screens' 42px
+    setMenuPointer(inputHandler.mouseInside ? inputHandler.mouse : null);
+    syncModeDrop(['main-menu', 'navigation', 'arsenal'].includes(screen) && !gameExited,
+      screen === 'main-menu' ? liveModeBox() : SQUAD_MODE_BOX);
     // Simulacrum spawner is drawn on the canvas: lift the canvas above the HUD while it is open,
     // so the HUD sits underneath the spawner UI (and is dimmed by its backdrop)
     document.body.classList.toggle('sim-menu-open', screen === 'simulacrum' && simulacrumMenu.visible);
@@ -579,33 +654,19 @@ function gameLoop(timestamp) {
       }
       if (inputHandler.isKeyPressed('p')) simulacrumMenu.toggle();
       const menuActive = simulacrumMenu.update(inputHandler, canvas, (enemy) => enemies.push(enemy), player);
+      // KILL ALL: remove every enemy in place (no loot or kill count; this is a test arena)
+      if (simulacrumMenu.takeKillAll()) enemies.length = 0;
 
+      // The Simulacrum is the normal world (same updateWorld and renderWorld as missions). The spawner only
+      // adds enemies, sets their level, and toggles two test states: enemy AI paused, player invulnerable.
+      player.invulnerable = simulacrumMenu.invulnerable;
+      for (const enemy of enemies) enemy.aiPaused = simulacrumMenu.pauseAI;
       if (!menuActive) {
-        if (simulacrumMenu.pauseAI) {
-          // AI paused: enemies stay still and do not shoot; you keep moving and can test freely
-          player.update(dt, inputHandler, projectiles, enemies, camera);
-          clampToArena(player);
-          updateCamera(dt);
-          for (const projectile of projectiles) projectile.update(dt, enemies);
-        } else {
-          updateWorld(dt);
-        }
+        updateWorld(dt);
         damageNumbersManager.update(dt);
-        if (missionFailed()) { screen = 'failed'; hud.setVisible(false); }
+        if (missionFailed()) showOutcome('failed');
       }
-      if (simulacrumMenu.pauseAI) {
-        // Invulnerable while AI is paused
-        const hc = player.healthComponent;
-        hc.hp = hc.maxHp;
-        hc.shield = hc.maxShield;
-        player.isBleedingOut = false;
-        player.awaitingRevive = false;
-      }
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const enemy of enemies) enemy.draw(ctx);
-      player.draw(ctx);
-      for (const p of projectiles) p.draw(ctx);
-      for (const l of loot) l.draw(ctx);
+      renderWorld();
       hud.updateVitals(player, dt); hud.updateWeapon(player); hud.updateDev(player);
       hud.updateObjective('SIMULACRUM', 'Press P to open spawner · Esc to exit', null);
       simulacrumMenu.draw(ctx, canvas);
@@ -623,6 +684,9 @@ function gameLoop(timestamp) {
                   openMainMenu(); 
                 }
               }
+              // The pointer over a mission shows its card
+              const pointer = inputHandler.getMousePos();
+              navigation.handleMove(pointer.x, pointer.y);
               if (inputHandler.isMouseClicked()) {
                 const mouse = inputHandler.getMousePos();
                 navigation.handleClick(mouse.x, mouse.y);
@@ -690,10 +754,15 @@ function gameLoop(timestamp) {
 
     if (screen === 'failed' || screen === 'complete') {
       drawOutcomeScreen();
-      if (inputHandler.isKeyPressed('m')) openMissionSelect();
-      else if (inputHandler.isKeyPressed('enter') || inputHandler.isMouseClicked()) {
-        if (mission) startMission(mission.id);
-        else openMainMenu();
+      // Read the inputs every frame so clicks and keys from the fight are cleared, but only act once the lockout ends
+      const wantsSelect = inputHandler.isKeyPressed('m');
+      const wantsRetry = inputHandler.isKeyPressed('enter') || inputHandler.isMouseClicked();
+      if (performance.now() >= outcomeReadyAt) {
+        if (wantsSelect) openMissionSelect();
+        else if (wantsRetry) {
+          if (mission) startMission(mission.id);
+          else openMainMenu();
+        }
       }
       requestAnimationFrame(gameLoop);
       return;
@@ -703,7 +772,14 @@ function gameLoop(timestamp) {
     hud.setVisible(!pauseMenu.visible); // the pause screen covers the whole view, like the main menu
     if (pauseMenu.visible) {
       const action = pauseMenu.update(inputHandler, canvas);
-      if (action === 'resume') pauseMenu.close();
+      if (action === 'settings') {
+        pauseMenu.close();
+        settingsFromPause = true;
+        settings.openScreen();
+        screen = 'settings';
+        hud.setVisible(false);
+      }
+      else if (action === 'resume') pauseMenu.close();
       else if (action === 'restart') startMission(mission.id);
       else if (action === 'abort') {
         pauseMenu.close();
@@ -716,28 +792,31 @@ function gameLoop(timestamp) {
           elapsed += dt;
           updateWorld(dt, { withMission: true });
           damageNumbersManager.update(dt);
-          if (missionFailed()) { screen = 'failed'; hud.setVisible(false); }
-          else if (missionWon()) { screen = 'complete'; hud.setVisible(false); }
+          if (missionFailed()) showOutcome('failed');
+          else if (missionWon()) {
+            awardMissionCredits();
+            if (missionNode) navigation.completeMission(missionNode.planet, missionNode.node);
+            showOutcome('complete');
+          }
         }
 
   
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Apply camera transform
-    ctx.save();
-    ctx.translate(-camera.x, -camera.y);
-    drawGrid();
-    
-    if (objective) objective.draw(ctx);
-    for (const enemy of enemies) enemy.draw(ctx);
-    if (player.alive || player.isBleedingOut) player.draw(ctx);
-    for (const p of projectiles) p.draw(ctx);
-    for (const l of loot) l.draw(ctx);
-    
-    ctx.restore();
+    renderWorld();
     updateHud(dt);
     pauseMenu.draw(ctx, canvas);
     simulacrumMenu.draw(ctx, canvas);
     requestAnimationFrame(gameLoop);
+}
+
+// Outcome screen input is ignored for a moment after it opens: a click or Enter from the fight
+// (firing, last kill) would otherwise restart the mission before the result is seen
+const OUTCOME_LOCKOUT_MS = 800;
+let outcomeReadyAt = 0;
+
+function showOutcome(next) {
+  screen = next;
+  outcomeReadyAt = performance.now() + OUTCOME_LOCKOUT_MS;
+  hud.setVisible(false);
 }
 
 function drawOutcomeScreen() {
@@ -757,9 +836,15 @@ function drawOutcomeScreen() {
   ctx.font = '20px system-ui, sans-serif';
   ctx.fillText(win ? 'You survived the onslaught.' : 'Your Warframe was destroyed.', canvas.width / 2, canvas.height / 2 + 10);
 
+  if (win && lastCreditReward > 0) {
+    ctx.fillStyle = '#7fc8e8';
+    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.fillText(`+${lastCreditReward.toLocaleString('en-US')} Credits`, canvas.width / 2, canvas.height / 2 + 44);
+  }
+
   ctx.fillStyle = '#9aa0b4';
   ctx.font = '16px system-ui, sans-serif';
-  ctx.fillText('Press Enter to Retry · M for Mission Select', canvas.width / 2, canvas.height / 2 + 60);
+  ctx.fillText('Press Enter to Retry · M for Mission Select', canvas.width / 2, canvas.height / 2 + 84);
   ctx.restore();
 }
 

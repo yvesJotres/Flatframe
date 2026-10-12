@@ -6,6 +6,9 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#0a0a14" />
   <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Flatframe" />
   <title>Flatframe - 2D Shooter</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
   <link rel="stylesheet" href="src/assets/style.css" />
@@ -20,6 +23,9 @@
     }
     #loading-screen.done { opacity: 0; pointer-events: none; }
     #loading-screen .ls-title { font-size: clamp(36px, 9vh, 64px); font-weight: 700; letter-spacing: 2px; }
+    @media (max-width: 600px) and (orientation: portrait) {
+      #loading-screen .ls-title { display: flex; flex-direction: column; align-items: center; font-size: clamp(44px, 14vw, 64px); line-height: 1.05; }
+    }
     #loading-screen .ls-sub { color: #ff6b35; font-size: 14px; letter-spacing: 4px; margin-top: -6px; }
     #loading-screen .ls-bar { width: min(360px, 70vw); height: 3px; margin-top: 28px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
     #loading-screen .ls-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff6b35, #ffd78a); transition: width 0.3s ease; }
@@ -36,12 +42,43 @@
   <div id="loading-screen" role="status" aria-live="polite">
     <span class="ls-corner tl"></span><span class="ls-corner tr"></span>
     <span class="ls-corner bl"></span><span class="ls-corner br"></span>
-    <div class="ls-title">FLATFRAME</div>
+    <div class="ls-title"><span class="ls-word">FLAT</span><span class="ls-word">FRAME</span></div>
     <div class="ls-sub">ORIGIN SYSTEM</div>
     <div class="ls-bar"><div class="ls-fill"></div></div>
     <div class="ls-status">Loading game files…</div>
+    <button id="reload-btn" type="button" aria-label="Reload game" title="Reload" style="display:none;position:absolute;top:46px;left:96px;z-index:2;width:42px;height:42px;border-radius:6px;border:1px solid rgba(255,107,53,0.6);background:rgba(10,10,20,0.85);color:#ffd78a;font:700 20px system-ui,sans-serif;padding:0;cursor:pointer;">&#x21bb;</button>
   </div>
   <script>
+    // Screen-size readout for diagnosing layout on touch devices. Open the page with ?debug to show it; tap it to hide.
+    if (new URLSearchParams(location.search).has('debug') && window.matchMedia('(pointer: coarse)').matches) {
+      var dbg = document.createElement('div');
+      dbg.style.cssText = 'position:fixed;left:150px;top:46px;z-index:300;background:rgba(0,0,0,0.85);color:#9af0b0;font:12px monospace;padding:6px 8px;border:1px solid #9af0b0;border-radius:4px;white-space:pre;pointer-events:auto;';
+      var probe = document.createElement('div');
+      probe.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);';
+      document.body.appendChild(probe);
+      var show = function () {
+        var cs = getComputedStyle(probe), vv = window.visualViewport, c = document.getElementById('gameCanvas'), cr = c ? c.getBoundingClientRect() : null;
+        var gc = document.getElementById('game-container'), gr = gc ? gc.getBoundingClientRect() : null;
+        dbg.textContent = [
+          'screen ' + screen.width + 'x' + screen.height + ' dpr ' + devicePixelRatio,
+          'inner ' + innerWidth + 'x' + innerHeight,
+          'visual ' + (vv ? Math.round(vv.width) + 'x' + Math.round(vv.height) : '-'),
+          'safe T' + cs.paddingTop + ' B' + cs.paddingBottom + ' L' + cs.paddingLeft + ' R' + cs.paddingRight,
+          'container ' + (gr ? Math.round(gr.width) + 'x' + Math.round(gr.height) + ' @' + Math.round(gr.top) : '-'),
+          'canvas css ' + (cr ? Math.round(cr.width) + 'x' + Math.round(cr.height) : '-') + ' px ' + (c ? c.width + 'x' + c.height : '-'),
+          'standalone ' + (navigator.standalone === true) + ' mode ' + (matchMedia('(display-mode: standalone)').matches ? 'standalone' : matchMedia('(display-mode: fullscreen)').matches ? 'fullscreen' : 'browser'),
+        ].join('\n');
+      };
+      dbg.addEventListener('click', function () { dbg.remove(); });
+      document.body.appendChild(dbg);
+      show();
+      setInterval(show, 1000);
+    }
+    if (window.matchMedia('(pointer: coarse)').matches) {
+      var reloadBtn = document.getElementById('reload-btn');
+      reloadBtn.style.display = 'block';
+      reloadBtn.addEventListener('click', function () { location.reload(); });
+    }
     // Progress API for game.js; module downloads have no progress events, so creep toward 35% meanwhile
     (function () {
       var el = document.getElementById('loading-screen');
