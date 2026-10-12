@@ -537,7 +537,7 @@ body.sim-menu-open #hud { z-index: 1; }
 #touch-controls.sim .tc-pause { display: none; }
 #touch-controls.sim .tc-spawner { display: block; }
 #touch-controls.sim-play .tc-buttons { display: grid; }
-#touch-controls:not(.sim-play) .tc-buttons, #touch-controls:not(.sim-play) .tc-stick { display: none; }
+#touch-controls.sim:not(.sim-play) .tc-buttons, #touch-controls.sim:not(.sim-play) .tc-stick { display: none; }
 #touch-controls.sim-play .tc-stick { display: block; }
 
 /* Prompt dismissed by a tap on first load: the game plays in portrait too (it returns after a triple-tap release) */
