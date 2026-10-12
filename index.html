@@ -131,7 +131,6 @@
         <div id="frame-display" class="vital-frame">EXCALIBUR [30]</div>
         <div class="chips">
           <span id="armor-display" class="chip">ARMOR 240</span>
-          <span id="energy-display" class="chip">ENERGY 150</span>
         </div>
       </div>
 
@@ -154,6 +153,33 @@
                 </div>
               </div>
               <div id="weapon-display" class="ammo-weapon">BRATON [30]</div>
+              <!-- Energy and abilities sit under the weapon: energy bar, then ability icons -->
+              <div class="energy-row">
+                <div class="energy-track"><div id="energy-fill" class="energy-fill"></div></div>
+                <span id="energy-display" class="energy-value">ENERGY 150</span>
+              </div>
+              <div class="ability-row">
+                <div id="ability-slash-dash" class="ability-icon" title="Slash Dash: 25 energy">
+                  <span class="ability-key">1</span>
+                  <span class="ability-glyph">SD</span>
+                  <span class="ability-cost">25</span>
+                </div>
+                <div id="ability-radial-blind" class="ability-icon" title="Radial Blind: 50 energy">
+                  <span class="ability-key">2</span>
+                  <span class="ability-glyph">RB</span>
+                  <span class="ability-cost">50</span>
+                </div>
+                <div id="ability-radial-javelin" class="ability-icon" title="Radial Javelin: 75 energy">
+                  <span class="ability-key">3</span>
+                  <span class="ability-glyph">RJ</span>
+                  <span class="ability-cost">75</span>
+                </div>
+                <div id="ability-exalted-blade" class="ability-icon" title="Exalted Blade: 25 energy, then 25/s">
+                  <span class="ability-key">4</span>
+                  <span class="ability-glyph">EB</span>
+                  <span class="ability-cost">25</span>
+                </div>
+              </div>
             </div>
 
       <!-- Bottom-left: dev read-out -->

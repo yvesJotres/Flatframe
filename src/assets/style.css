@@ -296,6 +296,79 @@ canvas {
   text-transform: uppercase;
 }
 
+/* Energy bar and ability icons, stacked under the weapon name */
+.energy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.5rem;
+}
+
+.energy-track {
+  width: 200px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.energy-fill {
+  height: 100%;
+  width: 100%;
+  background: #6fd3ff;
+  transition: width 0.1s linear;
+}
+
+.energy-value {
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.ability-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 0.4rem;
+}
+
+.ability-icon {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  transition: opacity 0.1s;
+}
+
+.ability-icon.unavailable { opacity: 0.35; }
+
+.ability-key {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.ability-glyph {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.ability-cost {
+  font-size: 9px;
+  color: #6fd3ff;
+  font-variant-numeric: tabular-nums;
+}
+
 /* -------------------------------------------------------- Scale indicator */
 
 .scale-indicator {
@@ -551,3 +624,9 @@ body.sim-menu-open #hud { z-index: 1; }
 
 /* Prompt dismissed by a tap: the game plays in portrait too */
 body.rotate-dismissed #rotate-prompt { display: none !important; }
+
+/* AUTO toggle (touch): lit while auto-play is on */
+#touch-controls .tc-auto.on {
+  border-color: #6fd3ff;
+  color: #6fd3ff;
+}

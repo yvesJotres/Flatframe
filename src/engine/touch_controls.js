@@ -6,7 +6,10 @@
  * - Left stick: WASD movement
  * - Right stick: aim (relative to the player) and fire while held
  * - Buttons: melee, heavy, parry, reload, swap, jump, revive, pause
+ * - AUTO toggle: aim and fire at the nearest enemy in range (the right stick overrides it)
  */
+
+import { findAutoPlayTarget, autoPlayAimPoint } from './auto_play.js';
 
 const STICK_RADIUS = 60;
 const DEAD_ZONE = 0.25;
@@ -33,6 +36,8 @@ export class TouchControls {
     this.enableFullscreenOnFirstTap();
     this.keepScreenAwake();
     this.aim = null; // {dx, dy} unit vector while right stick is held
+    this.autoPlay = false; // AUTO toggle
+    this.autoFiring = false; // true while auto-play holds fire, so it only releases what it pressed
     this.loop = this.loop.bind(this);
     requestAnimationFrame(this.loop);
   }
@@ -53,6 +58,7 @@ export class TouchControls {
         <button data-key="f">SWAP</button>
         <button data-key="control,space, ">JUMP</button>
         <button data-key="x">REVIVE</button>
+        <button class="tc-auto" data-auto="1">AUTO</button>
       </div>
       <button class="tc-pause" data-key="escape">II</button>
       <button class="tc-spawner" data-key="p">SPAWNER</button>
@@ -69,6 +75,10 @@ export class TouchControls {
       const press = (e) => {
         e.preventDefault();
         btn.classList.add('active');
+        if (btn.dataset.auto) {
+          this.toggleAutoPlay(btn);
+          return;
+        }
         // Melee is equipped by holding F; a tap on MELEE while ranged is out holds it for the switch handler
         if (btn.dataset.melee && this.hooks.isMeleeEquipped && !this.hooks.isMeleeEquipped()) {
           this.keyDown('f');
@@ -81,6 +91,7 @@ export class TouchControls {
       const release = (e) => {
         e.preventDefault();
         btn.classList.remove('active');
+        if (btn.dataset.auto) return; // a toggle acts on press only
         if (btn.dataset.key) btn.dataset.key.split(',').forEach((k) => this.keyUp(k));
         if (btn.dataset.mouse) this.input.mouse[btn.dataset.mouse] = false;
       };
@@ -177,6 +188,30 @@ export class TouchControls {
     el.addEventListener('touchcancel', end, { passive: false });
   }
 
+  toggleAutoPlay(btn) {
+    this.autoPlay = !this.autoPlay;
+    btn.classList.toggle('on', this.autoPlay);
+  }
+
+  // While auto-play is on and the right stick is idle, aim at the nearest enemy and hold fire
+  updateAutoPlay(playing) {
+    const player = this.hooks.getPlayerWorldPos?.();
+    const target = playing && this.autoPlay && !this.aim && this.hooks.getEnemies
+      ? findAutoPlayTarget(player, this.hooks.getEnemies())
+      : null;
+    if (target) {
+      const origin = this.hooks.getPlayerScreenPos();
+      const point = autoPlayAimPoint(origin, player, target, AIM_DISTANCE);
+      this.input.mouse.x = point.x;
+      this.input.mouse.y = point.y;
+      this.input.mouse.down = true;
+      this.autoFiring = true;
+    } else if (this.autoFiring) {
+      this.input.mouse.down = false;
+      this.autoFiring = false;
+    }
+  }
+
   setMove(dx, dy) {
     const set = (k, on) => (on ? this.keyDown(k) : this.keyUp(k));
     set('w', dy < -DEAD_ZONE);
@@ -202,6 +237,7 @@ export class TouchControls {
     this.root.classList.toggle('hidden', !(playing || mode === 'sim-play' || mode === 'sim-menu'));
     this.root.classList.toggle('sim', mode === 'sim-play' || mode === 'sim-menu');
     this.root.classList.toggle('sim-play', mode === 'sim-play');
+    this.updateAutoPlay(playing);
     if (playing && this.aim) {
       const p = this.hooks.getPlayerScreenPos();
       const len = Math.hypot(this.aim.dx, this.aim.dy);
