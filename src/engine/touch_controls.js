@@ -14,8 +14,8 @@ const AIM_DISTANCE = 220;
 
 export function isTouchDevice() {
   return typeof window !== 'undefined' &&
-    (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) &&
-    (window.matchMedia?.('(pointer: coarse)').matches || /mobile|android|iphone|ipad/i.test(navigator.userAgent));
+    (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) &&
+    window.matchMedia?.('(pointer: coarse)').matches;
 }
 
 export class TouchControls {
