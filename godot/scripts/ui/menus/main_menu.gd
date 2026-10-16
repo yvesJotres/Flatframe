@@ -2,7 +2,7 @@ class_name Menu
 extends Control
 
 # Landing menu, port of the landing view in src/ui/menus/main_menu.js.
-# Navigation opens the star chart. Arsenal, Profile and Options are not ported yet.
+# Navigation opens the star chart. Arsenal, Profile and Options open their own screens.
 
 const BG_COLOR := Color("#0a0a0c")
 const TEXT := Color("#ffffff")
@@ -17,9 +17,9 @@ const ROW_WIDTH := 320.0
 const OPTIONS := ["Navigation", "Arsenal", "Profile", "Options"]
 const DESCRIPTIONS := [
 	"Choose a mission on the star chart.",
-	"Arsenal is not ported yet.",
-	"Profile is not ported yet.",
-	"Options is not ported yet.",
+	"Equip your Warframe, weapons and mods.",
+	"View your profile and account.",
+	"Customize game settings.",
 ]
 
 var selected := 0
