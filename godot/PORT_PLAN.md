@@ -239,3 +239,10 @@ Done-when: a browser screenshot and a Godot screenshot of the same mission state
 - Caveats: ability kills (all Affinity to the Warframe) and ability Affinity (energy cost) are not wired yet; the Arsenal and profile bars do not read the new ranks yet (the profile still shows rank 0 for the equipped frame, see `profile.gd`); the browser's Affinity rank-up checks are not ported.
 - Not started: drops and loot tables (`enemies/drop_tables.js`, `pickups/loot.js`), region resources, selling, fusion, and item upgrades (`economy/*.js`).
 - Tests: progression 8 of 8 (new `tests/progression_test.gd`), mission flow 23 of 23, defense 7 of 7, combat 137 of 137. Live smoke test (`tests/live_smoke_test.gd`) runs a node mission for 600 frames with no script errors.
+
+## Phase 6: drops, selling, fusion, upgrades (rules done; UI not)
+
+- Done: the enemy drop tables (`scripts/enemies/drop_tables.gd`): per-kill chances for mods, Endo and Earth region resources, rolled on each kill. Drops lie where the enemy fell and are picked up (Endo and resources to the wallet, a mod to the owned list at rank 0).
+- Done: mod fusion (`scripts/economy/fusion.gd`), with the browser's default cost tables; Orokin Catalyst and Reactor (`scripts/economy/upgrades.gd`); selling rules (`scripts/economy/selling.gd`).
+- Caveats: the Arsenal, Market and Equipment menus that use these are not ported, so the player cannot fuse, buy or sell from the UI yet. Mods from drops have no stats in the data yet (placeholders, as in the browser). Region resources are stored but not spent by anything yet.
+- Tests: economy 9 of 9 (new `tests/economy_test.gd`), progression 11 of 11, mission flow 23 of 23, defense 7 of 7, combat 137 of 137, live smoke 4 of 4.

@@ -352,6 +352,14 @@ func _apply_drop(d: Dictionary) -> void:
 			player.ammo = mini(int(player.weapon.get("magazineSize", 0)), player.ammo + d.amount * 10)
 		"energy":
 			player.energy = minf(150.0, player.energy + 25.0)
+		"endo":
+			Wallet.add(UserStore.active_id(), "endo", d.amount)
+		"resource":
+			Wallet.add(UserStore.active_id(), d.currency, d.amount)
+		"mod":
+			# A mod is owned at rank 0 once (owned_mods.js); a second copy adds nothing yet
+			if not Mods.owned_ranks.has(d.unique):
+				Mods.owned_ranks[d.unique] = 0
 
 
 # A shot is heard by the enemies in the same room as the shot (ai_behavior.js hearing)
@@ -409,7 +417,7 @@ func _draw_containers() -> void:
 
 # Loot on the floor: a small coloured dot per item
 func _draw_drops() -> void:
-	var colours := {"credits": Color("#ffd700"), "ammo": Color("#44aaff"), "secondary_ammo": Color("#ffaa44"), "energy": Color("#01d8ff"), "health": Color("#cc2a28"), "endo": Color("#e0b43a")}
+	var colours := {"credits": Color("#ffd700"), "ammo": Color("#44aaff"), "secondary_ammo": Color("#ffaa44"), "energy": Color("#01d8ff"), "health": Color("#cc2a28"), "endo": Color("#e0b43a"), "mod": Color("#c77dff"), "resource": Color("#7fc8e8")}
 	for d in drops:
 		draw_circle(d.pos, 5.0, colours.get(d.type, Color.WHITE))
 
@@ -497,6 +505,10 @@ func _on_enemy_died(enemy: Enemy) -> void:
 	var frame_name := str(Loadout.equipped_item("warframe").get("name", ""))
 	var weapon_name := str(Loadout.equipped_item("primary").get("name", ""))
 	Progression.award_kill(enemy.enemy_name, enemy.level, frame_name, weapon_name)
+	# Table drops (Endo, mods, region resources) lie where the enemy fell, to be picked up
+	for d in DropTables.roll(enemy.enemy_name):
+		d["pos"] = enemy.position + Vector2((randf() - 0.5) * 40.0, (randf() - 0.5) * 40.0)
+		drops.append(d)
 
 
 func _draw() -> void:
