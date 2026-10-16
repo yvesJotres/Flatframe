@@ -48,11 +48,15 @@ static func amount(profile_id: String, currency: String) -> int:
 	return int(balances(profile_id).get(currency, 0))
 
 
+# Balance changes since the last read (currency, delta), for the on-screen toasts (currency_toast.js)
+static var pending_changes: Array = []
+
 static func add(profile_id: String, currency: String, value: int) -> bool:
 	var bal := balances(profile_id)
 	if value <= 0 or not bal.has(currency):
 		return false
 	bal[currency] = int(bal[currency]) + value
+	pending_changes.append({"currency": currency, "delta": value})
 	set_balances(profile_id, bal)
 	return true
 
@@ -65,5 +69,7 @@ static func spend(profile_id: String, costs: Dictionary) -> bool:
 			return false
 	for currency in costs:
 		bal[currency] = int(bal[currency]) - int(costs[currency])
+		if int(costs[currency]) > 0:
+			pending_changes.append({"currency": currency, "delta": -int(costs[currency])})
 	set_balances(profile_id, bal)
 	return true

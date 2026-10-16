@@ -188,6 +188,8 @@ func _ready() -> void:
 	hud.game = self
 	layer.add_child(hud)
 	hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Currency pop-ups over the mission (currency_toast.js)
+	layer.add_child(CurrencyToast.new())
 
 	# Esc opens the pause menu, which pauses the tree (Resume, Restart, Options, Abort)
 	pause = PauseMenu.new()

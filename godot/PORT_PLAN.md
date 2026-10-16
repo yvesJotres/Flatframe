@@ -252,3 +252,9 @@ Done-when: a browser screenshot and a Godot screenshot of the same mission state
 - Done: the pause menu (`scripts/ui/menus/pause_menu.gd`, port of `src/ui/menus/pause_menu.js`). Esc opens it and pauses the mission. Resume, Restart Mission, Options (the settings menu), and Abort Mission (asks first, then returns to the menu with no rewards).
 - Not done: the work-in-progress screen, mission select, currency toasts, the squad panel, the top-bar avatar and invite icons, the Simulacrum menu, and the focus sound. Phases 8 and 9 have not started.
 - Tests: pause 5 of 5 (new `tests/pause_test.gd`); combat 137, mission flow 23, defense 7, progression 11, economy 9, live smoke 4, all passing.
+
+## Phase 7: currency toasts (done)
+
+- Done: "+45 Endo" and "−20 Platinum" pop-ups over the mission (`scripts/ui/currency_toast.gd`, port of `src/ui/currency_toast.js`). The wallet records each change (`Wallet.pending_changes`), and the toast reads them. Shown in missions; not yet on the menus.
+- Tests: toast 4 of 4 (new `tests/toast_test.gd`); the other suites still pass.
+- Still open in Phase 7: the work-in-progress screen, mission select, the squad panel, the top-bar avatar and invite icons, the Simulacrum menu, and the focus sound.
