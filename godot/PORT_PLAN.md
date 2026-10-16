@@ -258,3 +258,8 @@ Done-when: a browser screenshot and a Godot screenshot of the same mission state
 - Done: "+45 Endo" and "−20 Platinum" pop-ups over the mission (`scripts/ui/currency_toast.gd`, port of `src/ui/currency_toast.js`). The wallet records each change (`Wallet.pending_changes`), and the toast reads them. Shown in missions; not yet on the menus.
 - Tests: toast 4 of 4 (new `tests/toast_test.gd`); the other suites still pass.
 - Still open in Phase 7: the work-in-progress screen, mission select, the squad panel, the top-bar avatar and invite icons, the Simulacrum menu, and the focus sound.
+
+## Phase 7: work-in-progress screen (done, not yet hooked into menus)
+
+- Done: the work-in-progress screen (`scripts/ui/menus/work_in_progress.gd`, port of `src/ui/menus/work_in_progress.js`). Esc or a click closes it and emits `closed`. Test: `tests/wip_test.gd` 2 of 2.
+- Not done: no menu opens it yet. The unbuilt Simulacrum console and Arsenal, Market and Equipment screens still need to call it.
