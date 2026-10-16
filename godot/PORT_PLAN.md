@@ -263,3 +263,8 @@ Done-when: a browser screenshot and a Godot screenshot of the same mission state
 
 - Done: the work-in-progress screen (`scripts/ui/menus/work_in_progress.gd`, port of `src/ui/menus/work_in_progress.js`). Esc or a click closes it and emits `closed`. Test: `tests/wip_test.gd` 2 of 2.
 - Not done: no menu opens it yet. The unbuilt Simulacrum console and Arsenal, Market and Equipment screens still need to call it.
+
+## Phase 7: focus sound (main menu, done)
+
+- Done: the hover sound (`ui_hover`) plays when the focused option changes on the main menu (`scripts/ui/menus/main_menu.gd`, port of the canvas case in `src/ui/focus_sound.js`). Sound data entry added to `data/sounds.json`.
+- Not done: the focus sound on the other menus (star chart, arsenal, profile, options) and on mouse hover over clickable elements.

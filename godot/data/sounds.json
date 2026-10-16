@@ -1,4 +1,10 @@
 {
+  "ui_hover": {
+    "file": "ui_hover.ogg",
+    "category": "ui",
+    "volume": 0.4,
+    "rate": null
+  },
   "melee_swing1": {
     "file": "swordSlash1.ogg",
     "category": "sfx",

@@ -23,6 +23,7 @@ const DESCRIPTIONS := [
 ]
 
 var selected := 0
+var last_focus := -1   # the option focused last frame, for the hover sound
 var hovered := -1
 var in_chart := false
 var in_arsenal := false
@@ -89,6 +90,10 @@ func _notification(what: int) -> void:
 
 
 func _process(delta: float) -> void:
+	# The hover sound plays when the focused option changes (focus_sound.js trackFocus)
+	if selected != last_focus and last_focus >= 0:
+		Sounds.play("ui_hover")
+	last_focus = selected
 	autosave_left -= delta
 	if autosave_left <= 0.0:
 		autosave_left = Account.AUTOSAVE_SECONDS
