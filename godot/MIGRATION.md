@@ -1,6 +1,6 @@
 # Flatframe → Godot migration
 
-Status: **vertical slice only.** The browser game in `src/` (about 21,000 lines of JavaScript) remains the source of truth. The Godot project in this folder reproduces one mission loop so the architecture can be checked before porting the rest.
+Status: **in progress.** The browser game in `src/` (about 21,000 lines of JavaScript) remains the source of truth. Per-file status is in [COVERAGE.md](COVERAGE.md) (38 ported, 56 partial, 25 missing, 5 out of scope). Phase status and measurements are in [PORT_PLAN.md](PORT_PLAN.md). The goal for a finished port is in [GOAL.md](GOAL.md). Where this file and those disagree, the code and COVERAGE.md win.
 
 ## Running the slice
 
@@ -20,11 +20,13 @@ godot --headless --path godot --quit-after 300         # loads the main scene
 
 The main scene loads with no script errors. Playing it interactively has not been checked.
 
+All nine suites in `godot/tests/*_test.gd` are run the same way (`-s res://tests/<name>.gd`). Latest run: combat 137, defense 7, economy 9, live smoke 4, mission flow 23, pause 5, progression 11, toast 4, wip 2, all passing. The number check is `node godot/tools/number_diff.mjs`.
+
 ## What's ported
 
 | JS source | Godot file | Notes |
 |---|---|---|
-| `src/warframe/player.js` (movement, aim, fire, reload) | `scripts/warframe/player.gd` | Movement speed is a placeholder (120 px/s). The JS value is not in the slice. |
+| `src/warframe/player.js` (movement, aim, fire, reload) | `scripts/warframe/player.gd` | Movement matches the JS: 400 px/s, acceleration 3600, deceleration 4800 (checked by `tools/number_diff.mjs`). |
 | `src/weapons/weapon.js`, `projectile.js` (flight, hit) | `scripts/weapons/projectile.gd` | Straight-flying bullets only. No hitscan, crits, or status procs. |
 | `src/enemies/enemy.js` (Crewman, basic chase) | `scripts/enemies/enemy.gd` | Chase inside 20 m, contact damage. No alert states, cover, or navmesh. |
 | `src/missions/missions.js` (exterminate) | `scripts/game.gd` | Quota, spawn cap, spawn interval. Escalation (`levelPerKills`) not ported. |
@@ -44,15 +46,15 @@ The main scene loads with no script errors. Playing it interactively has not bee
 
 Listed in rough dependency order. Each row maps to the JS module it replaces.
 
-- **Units and constants** (`src/engine/constants.js`): `UNITS_PER_METER = 15` and the timing constants are hard-coded in the slice. Move them to an autoload `Constants` singleton.
+- **Units and constants** (`src/engine/constants.js`): done. `scripts/engine/constants.gd` is the `Constants` autoload. Note: the JS file's header comment says "1 Meter = 8 pixels", but its value is 15 units per metre, and the port uses 15.
 - **Tile map and collision** (`src/engine/map/*`, `src/engine/collision.js`, `src/engine/navigation/navmesh.js`, `orca.js`): Use `TileMapLayer` for the floor and walls. Use `NavigationRegion2D` plus `NavigationAgent2D` in place of the custom navmesh and ORCA avoidance. Enemy movement currently ignores walls.
 - **Full weapon system** (`primary_weapon.js`, `secondary_weapon.js`, `melee_weapon.js`, `grenade.js`, `weapon_switch.js`): Only the Braton is wired up. Melee combos, parry, heavy attack, and grenades remain.
 - **Status effects** (`src/combat/status_effects.js`): Configs, proc chance, proc picker, and stacking are ported to `scripts/combat/status_effects.gd`. Per-tick behaviour (Ignite armor strip, Tesla chain, Gas cloud, Blast detonation, Freeze slow, and similar) is **not** ported. The JS does not implement it either, so it needs a design decision first. Tau has no config in the JS and is not ported.
 - **JS gap, present in the source:** `applyStatusEffect` calls `getEffect`, which `status_manager.js` never defined, and `createStatusEffect` produces no `tickDamage` or `interval`, so the JS `StatusManager.update` cannot tick those procs. The Godot port adds `get_effect` but keeps the same missing tick fields. Fix it deliberately, not by copying.
 - **Stealth and finishers** (`src/combat/stealth.js`): Not ported. Depends on the enemy alert-state machine.
 - **Damage numbers** (`src/combat/damage_numbers.js`, 340 lines): Visual only, not ported.
-- **Warframe abilities** (`src/warframe/abilities/*`, `jump.js`, `warframes.js`): Bullet jump, self-revive, and abilities 1–4 are not ported.
-- **Enemy factions** (`src/enemies/*`, 10 files): Only a generic Crewman stand-in exists. Port AI behaviour (`ai_behavior.js`, `patrol.js`), spawner, drop tables, and each unit.
+- **Warframe abilities** (`src/warframe/abilities/*`, `jump.js`, `warframes.js`): Ported: parkour (Shift hop, double jump, bullet jump; Ctrl crouch), and Excalibur's abilities 1–4 (Slash Dash on 1, Radial Blind on 2, Radial Javelin on 3, Exalted Blade on 4, with its energy waves, and the dash trail). The logic and numbers are in `scripts/warframe/abilities/` and tested by `tests/excalibur_test.gd` and `tests/parkour_test.gd`. Not ported: the javelin and energy-wave drawings and the dash trail's ribbon, which the browser draws with `energy_visuals.js`; the Blade's stance as a melee weapon, which the JS also does not wire into the summon; and self-revive.
+- **Enemy factions** (`src/enemies/*`): every unit exists as stats in `scripts/enemies/registry.gd`, and Crewman has its own class. Attacks specific to other units, flanking, and the spawner are partial. See COVERAGE.md.
 - **Missions** (`src/missions/objective.js`, the other modes in `missions.js`): Survival, Defense, Dark Sector Defense, and Simulacrum are not started.
 - **Pickups and economy** (`src/pickups/loot.js`, `src/economy/*`, `src/user/*`): Wallet, currencies, rewards, fusion, selling, and accounts. Accounts use PBKDF2 in the JS build. Godot has no built-in equivalent, so use `Crypto.hmac_digest` or a GDExtension, and pick a save format (`ConfigFile` or JSON in `user://`).
 - **UI** (`src/ui/**`, `src/assets/style.css`, `colors.js`): Use `Control` nodes and a shared `Theme` resource in place of `menu_style.js`. The star chart, arsenal, profile, settings, and login screens are all still to do.
@@ -177,9 +179,10 @@ Still open: the continents. Root cause found: the visible coastline polygons are
 
 ## Known differences from the browser build
 
-- Player and enemy speeds, radii, and sight range are placeholders where the slice has no JS equivalent to copy.
+- Player movement matches the JS. Enemy speeds, radii and sight range have not been checked against the JS yet; `tools/number_diff.mjs` only covers the player and constants.
 - Enemies pass through walls (no collision layer yet).
 - Projectiles are not hitscan. The Braton's `HitScan` shot type is not honoured yet.
+- Weapon switching: F taps between primary and secondary, as in `weapon_switch.js`. The Godot port used to switch on 1 and 2, which are now the abilities. The JS hold on F, which toggles melee, is not ported.
 - Coordinates: the JS uses screen pixels with 15 px per metre. The slice keeps that scale so numbers can be compared directly.
 
 ## Suggested next steps

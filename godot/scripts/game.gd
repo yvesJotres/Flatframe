@@ -45,7 +45,7 @@ const BG_COLOR := Color("#0a0a0c")
 const CAPSULE_COLOR := Color("#01d8ff")   # COLORS.LOOT_ENERGY
 const EXTRACT_COLOR := Color("#43b306")   # COLORS.EXTRACTION
 const TILE_SIZE := 96.0           # the generator's tile size (tile_generator.js TILE_SIZE)
-const GRID_STEP := 15.0          # UNITS_PER_METER: 1 m
+const GRID_STEP := 15.0   # one metre (constants.js GRID_SIZE)
 const GRID_MAJOR_STEP := 75.0    # every 5 m
 
 var mode := "exterminate"

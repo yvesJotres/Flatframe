@@ -7,8 +7,8 @@ extends Node2D
 
 signal died(enemy)
 
-const RADIUS := 14.0
-const SPEED := 70.0
+const RADIUS := 16.0                       # src/enemies/enemy.js default radius
+const SPEED := 150.0                      # src/enemies/enemy.js default moveSpeed
 const MAX_HP := 60.0
 const SIGHT_RANGE := 25.0 * 15.0        # 25 m (SIGHT_RANGE_M in enemy.js)
 const VISION_ARC := TAU * 2.0 / 3.0     # 120° cone
@@ -54,6 +54,8 @@ var patrol_heading := 0.0
 var patrol_made := false
 
 # Alert state: "unalerted" | "cautious" | "alerted" (enemy.js alertState)
+var blind_timer := 0.0   # seconds left blinded: cannot see the Warframe (enemy.js blindTimer)
+var stun_timer := 0.0    # seconds left stunned by Blind: stands still, no attacks (enemy.js stunTimer)
 var alert := "unalerted"
 var alert_timer := 0.0
 var facing := 0.0
@@ -83,14 +85,28 @@ func _ready() -> void:
 	facing = patrol_angle
 
 
+# Blind (Excalibur's Radial Blind): the enemy cannot see the Warframe, and is stunned for the whole blind
+# (enemy.js applyBlind). The stun stops movement and attacks, as in the browser.
+func apply_blind(duration: float) -> void:
+	blind_timer = maxf(blind_timer, duration)
+	stun_timer = maxf(stun_timer, duration)
+	alert = "unalerted"
+
+
 func _process(delta: float) -> void:
 	if not dead:
 		_tick_status(delta)
+	blind_timer = maxf(0.0, blind_timer - delta)
+	stun_timer = maxf(0.0, stun_timer - delta)
 	if dead or target == null:
 		return
 	# Knocked down: lying on the ground, with no movement or attacks until it gets up (enemy.js)
 	if knocked_seconds > 0.0:
 		knocked_seconds = maxf(0.0, knocked_seconds - delta)
+		queue_redraw()
+		return
+	# Stunned by Blind: stands still and does nothing (enemy.js stunTimer)
+	if stun_timer > 0.0:
 		queue_redraw()
 		return
 	var sees := sees_target()
@@ -114,7 +130,7 @@ func _process(delta: float) -> void:
 			else:
 				_follow_path(delta, last_seen, 0.7)
 	var to_target := target.global_position - global_position
-	if to_target.length() <= RADIUS + Player.RADIUS:
+	if to_target.length() <= RADIUS + target.radius:
 		target.take_damage(CONTACT_DPS * _damage_out_factor() * delta)
 	queue_redraw()
 
@@ -130,9 +146,11 @@ func _engage(delta: float) -> void:
 
 # Whether the Warframe is within the vision cone and sight range, with no wall in the way (enemy.js isInVisionCone)
 func sees_target() -> bool:
+	if blind_timer > 0.0:   # a blinded enemy cannot see anything (enemy.js isInVisionCone)
+		return false
 	var to_target := target.global_position - position
 	var dist := to_target.length()
-	if dist > SIGHT_RANGE + target.RADIUS:
+	if dist > SIGHT_RANGE * target.sight_factor + target.radius:
 		return false
 	if dist > 0.0:
 		var diff := wrapf(to_target.angle() - facing, -PI, PI)

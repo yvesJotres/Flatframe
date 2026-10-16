@@ -4,7 +4,7 @@ extends Node2D
 # A round fired by an enemy (the Grakata's damage from the browser's weapon data). It flies straight and hits the
 # player on contact; a wall stops it.
 
-const SPEED := 700.0      # DEFAULT_PROJECTILE_SPEED in engine/constants.js
+const SPEED := 700.0   # src/engine/constants.js DEFAULT_PROJECTILE_SPEED (an autoload name cannot be used in a constant)
 const LIFETIME := 3.0
 const HIT_RADIUS := 6.0
 

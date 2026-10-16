@@ -3,14 +3,16 @@ extends Node2D
 
 # Warframe-style player: WASD movement, mouse aim, primary weapon fire and reload.
 # Values mirror src/warframe/player.js and src/weapons/weapon.js where the JS defines them.
-# Movement speed is a placeholder (JS source does not expose one in the slice).
 
 const RADIUS := 16.0
-const MOVE_SPEED := 120.0
+const MOVE_SPEED := 400.0       # src/warframe/player.js moveSpeed
+const ACCELERATION := 3600.0    # player.js acceleration (px/s²)
+const DECELERATION := 4800.0    # player.js deceleration (px/s²)
 const MAX_HP := 100.0
-const PROJECTILE_SPEED := 700.0   # DEFAULT_PROJECTILE_SPEED in engine/constants.js
+const PROJECTILE_SPEED := 700.0   # constants.js DEFAULT_PROJECTILE_SPEED (an autoload name cannot be used in a constant)
 const PROJECTILE_LIFETIME := 2.0
 
+var velocity := Vector2.ZERO            # px/s, eased toward the input (player.js velocity)
 var max_hp := MAX_HP   # set by the mission from the frame's base health and its mods
 var max_shield := 0.0  # set by the mission from the frame's base shield and its mods
 var max_armor := 0.0   # set by the mission from the frame's base armor and its mods
@@ -59,6 +61,18 @@ var fire_cooldown := 0.0
 var aim_dir := Vector2.RIGHT
 var bounds := Vector2(1600, 1200)
 var blocked: Callable   # set by the mission: true when a circle at a point touches a wall
+
+# Parkour (src/warframe/jump.js, player.js crouch and jump)
+var jump := JumpState.new()
+var radius := RADIUS            # RADIUS standing, JumpState.CROUCH_RADIUS crouched
+var sight_factor := 1.0         # enemies see a crouched Warframe from less far
+var crouching := false
+var shift_was_down := false
+var slash_dash := SlashDash.new()        # ability 1 (src/warframe/abilities/excalibur_abilities.js)
+var exalted_blade := ExaltedBlade.new()  # ability 4
+var dash_trail := DashTrail.new()
+var bullet_visual_timer := 0.0  # seconds left on the bullet jump's trail
+var bullet_origin := Vector2.ZERO
 
 # Sets both weapons (with their mods applied) and starts on the primary
 func set_weapons(primary: Dictionary, secondary: Dictionary) -> void:
@@ -125,6 +139,8 @@ func melee_swing(heavy: bool = false) -> int:
 	else:
 		combo_count += hits
 		combo_timer = 5.0
+	# While the Exalted Blade is summoned, each swing sends an energy wave along the aim
+	exalted_blade.fire_wave(position, aim_dir.angle())
 	return hits
 
 
@@ -149,11 +165,32 @@ func _check_weapon_keys() -> void:
 		melee_swing(true)
 	key_was_down[MOUSE_BUTTON_MIDDLE] = heavy_down
 	parrying = Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
-	for pair in [[KEY_1, "primary"], [KEY_2, "secondary"]]:
-		var down := Input.is_physical_key_pressed(pair[0])
-		if down and not key_was_down.get(pair[0], false):
-			switch_to(pair[1])
-		key_was_down[pair[0]] = down
+	# F swaps between the primary and the secondary (src/warframe/weapon_switch.js). Keys 1-4 are the abilities.
+	var f_down := Input.is_physical_key_pressed(KEY_F)
+	if f_down and not key_was_down.get(KEY_F, false):
+		switch_to("secondary" if active_slot == "primary" else "primary")
+	key_was_down[KEY_F] = f_down
+
+
+# Keys 1-4: Excalibur's abilities (src/warframe/player.js). Each acts on the press, not while held.
+func _check_abilities() -> void:
+	var enemies := get_tree().get_nodes_in_group("enemies")
+	var k1 := Input.is_physical_key_pressed(KEY_1)
+	if k1 and not key_was_down.get(KEY_1, false):
+		slash_dash.activate(self, aim_dir.angle())
+	key_was_down[KEY_1] = k1
+	var k2 := Input.is_physical_key_pressed(KEY_2)
+	if k2 and not key_was_down.get(KEY_2, false):
+		ExcaliburAbilities.cast_radial_blind(self, enemies)
+	key_was_down[KEY_2] = k2
+	var k3 := Input.is_physical_key_pressed(KEY_3)
+	if k3 and not key_was_down.get(KEY_3, false):
+		ExcaliburAbilities.cast_radial_javelin(self, enemies)
+	key_was_down[KEY_3] = k3
+	var k4 := Input.is_physical_key_pressed(KEY_4)
+	if k4 and not key_was_down.get(KEY_4, false):
+		exalted_blade.toggle(self)
+	key_was_down[KEY_4] = k4
 
 func _ready() -> void:
 	health = HealthComponent.new({"maxHp": max_hp, "maxShield": max_shield, "armor": max_armor}, true)
@@ -172,7 +209,13 @@ func _process(delta: float) -> void:
 	if health.is_dead():
 		return
 	_check_weapon_keys()
+	_check_abilities()
 	_move(delta)
+	exalted_blade.update(delta, self)
+	exalted_blade.update_waves(delta, get_tree().get_nodes_in_group("enemies"), blocked)
+	if slash_dash.active and exalted_blade.active:
+		dash_trail.record(position)
+	dash_trail.update(delta)
 	_aim()
 	fire_cooldown = max(0.0, fire_cooldown - delta)
 	if reload_left > 0.0:
@@ -200,17 +243,69 @@ func _move(delta: float) -> void:
 	if Input.is_key_pressed(KEY_S): dir.y += 1.0
 	if Input.is_key_pressed(KEY_A): dir.x -= 1.0
 	if Input.is_key_pressed(KEY_D): dir.x += 1.0
-	if dir != Vector2.ZERO:
-		var step := dir.normalized() * MOVE_SPEED * delta
-		# Slide along walls: each axis is tried on its own
-		if not blocked.is_valid() or not blocked.call(position + Vector2(step.x, 0.0), RADIUS):
-			position.x += step.x
-		if not blocked.is_valid() or not blocked.call(position + Vector2(0.0, step.y), RADIUS):
-			position.y += step.y
-	position = position.clamp(Vector2(RADIUS, RADIUS), bounds - Vector2(RADIUS, RADIUS))
+
+	# Crouch (held Ctrl): smaller hitbox, and enemies see it from less far (enemy.js sightFactor)
+	crouching = Input.is_key_pressed(KEY_CTRL)
+	radius = JumpState.CROUCH_RADIUS if crouching else JumpState.STAND_RADIUS
+	sight_factor = JumpState.CROUCH_SIGHT_FACTOR if crouching else 1.0
+
+	# Jump (Shift): hop, double jump, or bullet jump when crouched. Acts on the press, not while held.
+	var shift_down := Input.is_key_pressed(KEY_SHIFT)
+	if shift_down and not shift_was_down:
+		var kind := jump.press(dir, aim_dir, crouching)
+		if kind == "bullet":
+			bullet_visual_timer = 0.15
+			bullet_origin = position   # the blast happens where the jump began (wiki)
+	shift_was_down = shift_down
+	var landing := jump.update(delta)
+	if landing == "bullet":
+		_blast_on_landing()
+	if bullet_visual_timer > 0.0:
+		bullet_visual_timer -= delta
+
+	if slash_dash.active:
+		# The Slash Dash moves the Warframe itself (slash_dash.update), so WASD and the jump do not
+		slash_dash.update(delta, self, get_tree().get_nodes_in_group("enemies"))
+		return
+	if jump.airborne:
+		# The jump carries the player; WASD does not steer it
+		velocity = Vector2(jump.vx, jump.vy)
+	else:
+		# Velocity eases toward the input, per axis, as player.js does
+		var target := dir.normalized() * MOVE_SPEED if dir != Vector2.ZERO else Vector2.ZERO
+		var rate := (ACCELERATION if dir != Vector2.ZERO else DECELERATION) * delta
+		velocity.x = move_toward(velocity.x, target.x, rate)
+		velocity.y = move_toward(velocity.y, target.y, rate)
+	_step(velocity * delta)
+
+
+# Moves by step, sliding along walls: each axis is tried on its own
+func _step(step: Vector2) -> void:
+	if not blocked.is_valid() or not blocked.call(position + Vector2(step.x, 0.0), radius):
+		position.x += step.x
+	if not blocked.is_valid() or not blocked.call(position + Vector2(0.0, step.y), radius):
+		position.y += step.y
+	position = position.clamp(Vector2(radius, radius), bounds - Vector2(radius, radius))
+
+
+# A bullet jump's blast (wiki): 100 damage within 3 m of where the jump began, falling off toward the edge.
+# The guaranteed Blast proc is not applied yet, as in player.js.
+func _blast_on_landing() -> void:
+	var origin := bullet_origin
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e.dead:
+			continue
+		var dist: float = e.position.distance_to(origin)
+		var reach: float = JumpState.BLAST_RADIUS + e.RADIUS
+		if dist > reach:
+			continue
+		var falloff: float = 1.0 - (1.0 - JumpState.BLAST_MIN_FRACTION) * (dist / reach)
+		e.take_damage(JumpState.BLAST_DAMAGE * falloff)
 
 
 func _aim() -> void:
+	if get_viewport() == null:   # headless tests have no viewport to read the mouse from
+		return
 	var to_mouse := get_global_mouse_position() - global_position
 	if to_mouse.length() > 1.0:
 		aim_dir = to_mouse.normalized()

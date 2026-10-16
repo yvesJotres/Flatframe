@@ -18,8 +18,14 @@ config/name="Flatframe"
 run/main_scene="res://scenes/menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
+[autoload]
+
+Constants="*res://scripts/engine/constants.gd"
+ScreenScale="*res://scripts/engine/screen_scale.gd"
+
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
