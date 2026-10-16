@@ -59,6 +59,7 @@ var routes: Array = [
 
 var selected := -1
 var hovered := -1
+var last_hovered := -1   # the node hovered last frame, for the hover sound
 var countdown := -1.0   # seconds left before launch; negative when not counting down
 var pending_name := ""  # the node (or "Survival") the running countdown will launch
 var _layers: Array = []   # the globe layers (background, surface, clouds)
@@ -75,6 +76,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# The hover sound when the focused node changes (focus_sound.js trackFocus)
+	if hovered != last_hovered and hovered >= 0:
+		Sounds.play("ui_hover")
+	last_hovered = hovered
 	for layer in _layers:
 		layer.center = _planet_center()
 		layer.radius = _planet_radius()
