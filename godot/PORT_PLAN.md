@@ -268,3 +268,10 @@ Done-when: a browser screenshot and a Godot screenshot of the same mission state
 
 - Done: the hover sound (`ui_hover`) plays when the focused option changes on the main menu (`scripts/ui/menus/main_menu.gd`, port of the canvas case in `src/ui/focus_sound.js`). Sound data entry added to `data/sounds.json`.
 - Not done: the focus sound on the other menus (star chart, arsenal, profile, options) and on mouse hover over clickable elements.
+
+## Phase 6 UI: Arsenal main view (matches the browser layout, not yet pixel-checked)
+
+- Done: the Arsenal's main view is drawn in the browser's 800 by 600 reference frame, scaled to the window: top bar (profile, invite, currencies), loadout name bar and four tabs, equipment cards with rank text, the action menu beside the focused card (SWAP, UPGRADE, APPEARANCE, and ABILITIES on the frame), the frame on its pedestal, the info panel, the stats panel with the damage bar, and BACK and MODS buttons (`scripts/ui/menus/arsenal.gd`).
+- UPGRADE, APPEARANCE and ABILITIES open the work-in-progress screen (Phase 7 hookup for this menu).
+- Still different from the browser: the Exalted Blade card is not listed (the Godot loadout has four slots); the stats panel shows no frame stats for the Warframe; the browser's frame figure, currency icons and tab icons are simplified; the tab row's icons are text.
+- Not done: the Market and Equipment screens; the browser's swap grid, filter and search; the mods deck on the Upgrade screen.
