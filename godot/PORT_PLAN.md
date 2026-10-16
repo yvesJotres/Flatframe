@@ -246,3 +246,9 @@ Done-when: a browser screenshot and a Godot screenshot of the same mission state
 - Done: mod fusion (`scripts/economy/fusion.gd`), with the browser's default cost tables; Orokin Catalyst and Reactor (`scripts/economy/upgrades.gd`); selling rules (`scripts/economy/selling.gd`).
 - Caveats: the Arsenal, Market and Equipment menus that use these are not ported, so the player cannot fuse, buy or sell from the UI yet. Mods from drops have no stats in the data yet (placeholders, as in the browser). Region resources are stored but not spent by anything yet.
 - Tests: economy 9 of 9 (new `tests/economy_test.gd`), progression 11 of 11, mission flow 23 of 23, defense 7 of 7, combat 137 of 137, live smoke 4 of 4.
+
+## Phase 7: pause menu (done); the rest open
+
+- Done: the pause menu (`scripts/ui/menus/pause_menu.gd`, port of `src/ui/menus/pause_menu.js`). Esc opens it and pauses the mission. Resume, Restart Mission, Options (the settings menu), and Abort Mission (asks first, then returns to the menu with no rewards).
+- Not done: the work-in-progress screen, mission select, currency toasts, the squad panel, the top-bar avatar and invite icons, the Simulacrum menu, and the focus sound. Phases 8 and 9 have not started.
+- Tests: pause 5 of 5 (new `tests/pause_test.gd`); combat 137, mission flow 23, defense 7, progression 11, economy 9, live smoke 4, all passing.

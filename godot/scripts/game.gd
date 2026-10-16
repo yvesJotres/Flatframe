@@ -69,6 +69,7 @@ const NODE_POOL := ["Trooper", "Lancer", "Butcher"]
 var base_enemies := SURVIVAL_BASE_ENEMIES
 var choice_open := false         # after a rotation, the player extracts or continues
 var choice_key_was := {}
+var pause: PauseMenu = null     # Esc: the pause menu (the tree is paused while it is open)
 var hud: Hud
 var elapsed := 0.0
 
@@ -187,6 +188,23 @@ func _ready() -> void:
 	hud.game = self
 	layer.add_child(hud)
 	hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	# Esc opens the pause menu, which pauses the tree (Resume, Restart, Options, Abort)
+	pause = PauseMenu.new()
+	pause.mission_name = mode.replace("_", " ").capitalize()
+	layer.add_child(pause)
+	pause.opened.connect(func():
+		pause.open(pause.mission_name)
+		get_tree().paused = true)
+	pause.resumed.connect(func():
+		pause.close()
+		get_tree().paused = false)
+	pause.restarted.connect(func():
+		get_tree().paused = false
+		get_tree().reload_current_scene())
+	pause.aborted.connect(func():
+		get_tree().paused = false
+		get_tree().change_scene_to_file("res://scenes/menu.tscn"))
 
 
 func _process(delta: float) -> void:
