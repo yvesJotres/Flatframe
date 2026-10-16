@@ -21,6 +21,18 @@ const TEXT := Color("#f0e8e0")
 const TEXT_DIM := Color("#9aa3bd")
 const ACCENT := Color("#ff6b35")
 const FRAME_GREEN := Color("#4ade80")
+# The Exalted Blade (src/warframe/abilities/excalibur_abilities.js EXALTED_BLADE_WEAPON), shown as a fixed weapon card
+const EXALTED_BLADE_ITEM := {
+	"name": "Exalted Blade",
+	"type": "Dual Swords",
+	"description": "Excalibur summons the Exalted Blade with his fourth ability. Its normal attack throws energy waves.",
+	"damage": {"impact": 37.5, "puncture": 37.5, "slash": 175.0, "total": 250.0},
+	"criticalChance": 0.15,
+	"criticalMultiplier": 2.0,
+	"procChance": 0.15,
+	"fireRate": 1.0,
+	"range": 2.8,
+}
 const DAMAGE_COLOURS := {"impact": Color("#7ab8ff"), "puncture": Color("#ffd166"), "slash": Color("#ff6b6b")}
 
 # Reference-frame layout (800 by 600)
@@ -88,6 +100,8 @@ func _to_ref(p: Vector2) -> Vector2:
 
 
 func _open_mods() -> void:
+	if focus >= Loadout.SLOTS.size():
+		return
 	view = "mods"
 	mods_panel.open(Loadout.SLOTS[focus])
 
@@ -117,17 +131,36 @@ func open_screen() -> void:
 func _card_rects() -> Array:
 	var rects: Array = []
 	var y := CARDS_Y
-	for i in range(Loadout.SLOTS.size()):
+	for i in range(_card_count()):
 		var h := FOCUS_CARD_H if i == focus else CARD_H
 		rects.append(Rect2(LEFT, y, LEFT_W, h))
 		y += h + CARD_GAP
 	return rects
 
 
+# The Exalted Blade is not a slot: it has no swap, only upgrade and appearance (browser SLOTS)
 func _action_names(slot: String) -> Array:
+	if slot == "exalted":
+		return ["UPGRADE", "APPEARANCE"]
 	if slot == "warframe":
 		return ["SWAP", "UPGRADE", "APPEARANCE", "ABILITIES"]
 	return ["SWAP", "UPGRADE", "APPEARANCE"]
+
+
+# Cards on the main view: the four loadout slots, then the Exalted Blade (display only, from Excalibur)
+func _card_count() -> int:
+	return Loadout.SLOTS.size() + 1
+
+
+func _card_slot(i: int) -> String:
+	return Loadout.SLOTS[i] if i < Loadout.SLOTS.size() else "exalted"
+
+
+func _card_item(i: int) -> Dictionary:
+	if i < Loadout.SLOTS.size():
+		return Loadout.equipped_item(Loadout.SLOTS[i])
+	return EXALTED_BLADE_ITEM
+
 
 
 func _action_rect(index: int) -> Rect2:
@@ -144,6 +177,8 @@ func _row_rect(i: int) -> Rect2:
 
 
 func _open_slot(i: int) -> void:
+	if i >= Loadout.SLOTS.size():
+		return
 	view = "swap"
 	focus = i
 	swap_items = Loadout.items(Loadout.SLOTS[i])
@@ -157,7 +192,7 @@ func _open_slot(i: int) -> void:
 func _equip(index: int) -> void:
 	if index < 0 or index >= swap_items.size():
 		return
-	var slot: String = Loadout.SLOTS[focus]
+	var slot: String = _card_slot(focus)
 	Loadout.equipped[slot] = swap_items[index].get("name", "")
 	if slot == "melee":
 		Sounds.play("melee_equip1")
@@ -175,7 +210,8 @@ func _open_unbuilt(action: String) -> void:
 func _do_action(action: String) -> void:
 	match action:
 		"SWAP":
-			_open_slot(focus)
+			if focus < Loadout.SLOTS.size():
+				_open_slot(focus)
 		"UPGRADE", "APPEARANCE", "ABILITIES":
 			_open_unbuilt(action)
 
@@ -199,9 +235,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if view == "main":
 		match key.keycode:
 			KEY_UP, KEY_W:
-				focus = (focus - 1 + Loadout.SLOTS.size()) % Loadout.SLOTS.size()
+				focus = (focus - 1 + _card_count()) % _card_count()
 			KEY_DOWN, KEY_S:
-				focus = (focus + 1) % Loadout.SLOTS.size()
+				focus = (focus + 1) % _card_count()
 			KEY_ENTER, KEY_KP_ENTER:
 				_do_action("SWAP")
 			KEY_M:
@@ -269,7 +305,7 @@ func _gui_input(event: InputEvent) -> void:
 			for i in range(cards.size()):
 				if cards[i].has_point(p):
 					focus = i
-					var actions := _action_names(Loadout.SLOTS[i])
+					var actions := _action_names(_card_slot(i))
 					for a in range(actions.size()):
 						if _action_rect(a).has_point(p):
 							_do_action(actions[a])
@@ -289,6 +325,14 @@ func _gui_input(event: InputEvent) -> void:
 # Stats to show for an item: [label, value] pairs in the browser's order. Only fields the data has are listed.
 func _stats(item: Dictionary) -> Array:
 	var rows: Array = []
+	if item.has("sprintSpeed"):
+		# A Warframe: its base stats from the data (the browser also adds mod bonuses)
+		rows.append(["Health", str(int(item.get("health", 0)))])
+		rows.append(["Shield", str(int(item.get("shield", 0)))])
+		rows.append(["Armor", str(int(item.get("armor", 0)))])
+		rows.append(["Energy", str(int(item.get("energy", 0)))])
+		rows.append(["Sprint Speed", _num(item.sprintSpeed)])
+		return rows
 	if item.has("criticalChance"):
 		rows.append(["Critical Chance", _num(float(item.criticalChance) * 100.0) + "%"])
 	if item.has("criticalMultiplier"):
@@ -404,10 +448,10 @@ func _draw_loadout_bar(font: Font) -> void:
 
 func _draw_cards(font: Font) -> void:
 	var cards := _card_rects()
-	for i in range(Loadout.SLOTS.size()):
-		var slot: String = Loadout.SLOTS[i]
+	for i in range(_card_count()):
+		var slot: String = _card_slot(i)
 		var r: Rect2 = cards[i]
-		var item: Dictionary = Loadout.equipped_item(slot)
+		var item: Dictionary = _card_item(i)
 		var is_focus := i == focus
 		draw_rect(r, CARD_FOCUS_FILL if is_focus else CARD_FILL)
 		draw_rect(r, CARD_FOCUS_STROKE if is_focus else CARD_STROKE, false, 1.5 if is_focus else 1.0)
@@ -431,7 +475,7 @@ func _draw_action_menu(font: Font, slot: String, index: int) -> void:
 
 
 func _draw_swap_list(font: Font) -> void:
-	var slot: String = Loadout.SLOTS[focus]
+	var slot: String = _card_slot(focus)
 	draw_string(font, Vector2(LEFT, CARDS_Y - 10.0), "SELECT " + Loadout.SLOT_LABELS[slot], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, ACCENT)
 	for i in range(swap_items.size()):
 		var r := _row_rect(i)
@@ -459,11 +503,11 @@ func _draw_pedestal(font: Font) -> void:
 
 func _draw_info_panel(font: Font) -> void:
 	var item: Dictionary
-	var slot: String = Loadout.SLOTS[focus]
+	var slot: String = _card_slot(focus)
 	if view == "swap" and swap_items.size() > 0:
 		item = swap_items[clampi(swap_focus, 0, swap_items.size() - 1)]
 	else:
-		item = Loadout.equipped_item(slot)
+		item = _card_item(focus)
 	var p := INFO_RECT
 	draw_rect(p, CARD_FILL)
 	draw_rect(p, CARD_STROKE, false, 1.0)
@@ -482,11 +526,11 @@ func _draw_info_panel(font: Font) -> void:
 
 func _draw_stats_panel(font: Font) -> void:
 	var item: Dictionary
-	var slot: String = Loadout.SLOTS[focus]
+	var slot: String = _card_slot(focus)
 	if view == "swap" and swap_items.size() > 0:
 		item = swap_items[clampi(swap_focus, 0, swap_items.size() - 1)]
 	else:
-		item = Loadout.equipped_item(slot)
+		item = _card_item(focus)
 	var p := STATS_RECT
 	draw_rect(p, CARD_FILL)
 	draw_rect(p, CARD_STROKE, false, 1.0)
