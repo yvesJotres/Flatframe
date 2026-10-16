@@ -1,0 +1,1238 @@
+[
+ {
+  "id": "keyboardMouse",
+  "label": "KEYBOARD/MOUSE",
+  "items": [
+   {
+    "key": "invertY",
+    "label": "Invert Y Axis",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "invertX",
+    "label": "Invert X Axis",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "lookSensitivity",
+    "label": "Look Sensitivity",
+    "type": "slider",
+    "default": 20,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "aimSensitivity",
+    "label": "Aim Sensitivity",
+    "type": "slider",
+    "default": 20,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "aimScopedSensitivity",
+    "label": "Aim Sensitivity (Scoped)",
+    "type": "slider",
+    "default": 20,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "mouseThumbBack",
+    "label": "Use Mouse Thumb Button as Back",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "autoSwapOnEmpty",
+    "label": "Auto Swap Weapon On Empty",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "reloadContext",
+    "label": "Reload with Context Action Input",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "meleeWithFire",
+    "label": "Melee with Fire Weapon Input",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "meleeAutoTarget",
+    "label": "Melee Auto Targeting",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "alignAttacksCamera",
+    "label": "Align Attacks to Camera",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "cameraTracksMelee",
+    "label": "Camera Tracks Melee Target",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "doubleJumpVoidSling",
+    "label": "Double Jump executes Void Sling",
+    "type": "toggle",
+    "default": false
+   }
+  ]
+ },
+ {
+  "id": "controller",
+  "label": "CONTROLLER",
+  "items": [
+   {
+    "key": "gamepadBindings",
+    "action": "fire",
+    "label": "Fire",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "parry",
+    "label": "Parry",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "heavy",
+    "label": "Heavy Attack",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "melee",
+    "label": "Melee",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "reload",
+    "label": "Reload",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "swap",
+    "label": "Swap (hold for Melee)",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "dash",
+    "label": "Jump (crouch + jump = bullet jump)",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "crouch",
+    "label": "Crouch (hold)",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "revive",
+    "label": "Revive",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "abilityModifier",
+    "label": "Ability Menu (hold)",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "ability1",
+    "label": "Ability 1 (hold modifier + A)",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "ability2",
+    "label": "Ability 2 (hold modifier + X)",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "ability3",
+    "label": "Ability 3 (hold modifier + B)",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "ability4",
+    "label": "Ability 4 (hold modifier + Y)",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "gamepadBindings",
+    "action": "pause",
+    "label": "Pause",
+    "type": "binding",
+    "note": "Enter, then press a button"
+   },
+   {
+    "key": "invertYController",
+    "label": "Invert Y Axis",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "invertXController",
+    "label": "Invert X Axis",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "lookSensitivityController",
+    "label": "Look Sensitivity",
+    "type": "slider",
+    "default": 20,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "aimSensitivityController",
+    "label": "Aim Sensitivity",
+    "type": "slider",
+    "default": 20,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "aimScopedSensitivityController",
+    "label": "Aim Sensitivity (Scoped)",
+    "type": "slider",
+    "default": 20,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "vibration",
+    "label": "Enable Vibration",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "uiCursorSensitivity",
+    "label": "UI Cursor Sensitivity",
+    "type": "slider",
+    "default": 50,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "useAbilitiesOnSelection",
+    "label": "Use Abilities on Selection",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "crouchToggle",
+    "label": "Crouch Button is Toggle",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "holdToSprint",
+    "label": "Hold to Sprint",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "holdToAim",
+    "label": "Hold to Aim Weapon",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "controllerAimAssist",
+    "label": "Enable Controller Aim Assist",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "leftStickDeadzone",
+    "label": "Left Stick Deadzone",
+    "type": "slider",
+    "default": 10,
+    "min": 0,
+    "max": 50,
+    "step": 1
+   },
+   {
+    "key": "rightStickDeadzone",
+    "label": "Right Stick Deadzone",
+    "type": "slider",
+    "default": 10,
+    "min": 0,
+    "max": 50,
+    "step": 1
+   },
+   {
+    "key": "triggerPressThreshold",
+    "label": "Trigger Press Threshold",
+    "type": "slider",
+    "default": 30,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "triggerReleaseThreshold",
+    "label": "Trigger Release Threshold",
+    "type": "slider",
+    "default": 20,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "controllerSouthpaw",
+    "label": "Enable Controller Southpaw",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "legacyAimDeadzone",
+    "label": "Legacy Aim Deadzone",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "touchControls",
+    "label": "Touch Controls",
+    "type": "choice",
+    "options": [
+     "Auto",
+     "On",
+     "Off"
+    ],
+    "default": "Auto",
+    "note": "Takes effect after reload"
+   },
+   {
+    "key": "touchAutoAim",
+    "label": "Touch Auto Aim",
+    "type": "choice",
+    "options": [
+     "Off",
+     "On"
+    ],
+    "default": "Off",
+    "note": "Aims and fires at the nearest enemy. The right stick overrides it"
+   },
+   {
+    "key": "touchOpacity",
+    "label": "Touch Controls Opacity",
+    "type": "slider",
+    "default": 0.8,
+    "min": 0.2,
+    "max": 1,
+    "step": 0.05,
+    "format": "percent"
+   },
+   {
+    "key": "touchSize",
+    "label": "Touch Controls Size",
+    "type": "slider",
+    "default": 1,
+    "min": 0.7,
+    "max": 1.4,
+    "step": 0.05,
+    "format": "percent"
+   }
+  ]
+ },
+ {
+  "id": "system",
+  "label": "SYSTEM",
+  "items": [
+   {
+    "key": "region",
+    "label": "Region",
+    "type": "choice",
+    "options": [
+     "Automatic",
+     "Europe",
+     "North America",
+     "Asia"
+    ],
+    "default": "Automatic"
+   },
+   {
+    "key": "matchmakingPing",
+    "label": "Matchmaking Ping Limit",
+    "type": "choice",
+    "options": [
+     "Off",
+     "100 ms",
+     "200 ms",
+     "300 ms"
+    ],
+    "default": "200 ms"
+   },
+   {
+    "key": "upnp",
+    "label": "Enable UPnP",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "crossPlatformPlay",
+    "label": "Cross Platform Play",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "gore",
+    "label": "Gore Enabled",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "legacyPalettes",
+    "label": "Legacy Color Palettes",
+    "type": "toggle",
+    "default": false
+   }
+  ]
+ },
+ {
+  "id": "social",
+  "label": "SOCIAL",
+  "items": [
+   {
+    "key": "squadInvitesFrom",
+    "label": "Allow Squad Invites From",
+    "type": "choice",
+    "options": [
+     "Everyone",
+     "Friends",
+     "Nobody"
+    ],
+    "default": "Everyone"
+   },
+   {
+    "key": "friendRequestsFrom",
+    "label": "Receive Friend Requests From",
+    "type": "choice",
+    "options": [
+     "Everyone",
+     "Friends of Friends",
+     "Nobody"
+    ],
+    "default": "Everyone"
+   },
+   {
+    "key": "friendRequestNotifications",
+    "label": "Show Friend Request Notifications",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "giftsFrom",
+    "label": "Receive Gifts From",
+    "type": "choice",
+    "options": [
+     "Everyone",
+     "Friends",
+     "Nobody"
+    ],
+    "default": "Everyone"
+   },
+   {
+    "key": "clanInvitesFrom",
+    "label": "Receive Clan Invitations From",
+    "type": "choice",
+    "options": [
+     "Everyone",
+     "Friends",
+     "Nobody"
+    ],
+    "default": "Everyone"
+   },
+   {
+    "key": "creatorMode",
+    "label": "Creator Mode",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "surveys",
+    "label": "Enable Surveys",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "chatRegion",
+    "label": "Show Region Chat",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "chatQuestions",
+    "label": "Show Questions & Answers Chat",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "chatRecruiting",
+    "label": "Show Recruiting Chat",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "chatTrade",
+    "label": "Show Trade Chat",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "chatTimestamps",
+    "label": "Show Chat Message Timestamps",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "profanityFilter",
+    "label": "Enable Profanity Filter",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "emojisAsText",
+    "label": "Emojis As Text",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "chatScale",
+    "label": "Chat Scale",
+    "type": "slider",
+    "default": 100,
+    "min": 50,
+    "max": 150,
+    "step": 5
+   },
+   {
+    "key": "chatNotificationVolume",
+    "label": "Chat Notification Volume",
+    "type": "slider",
+    "default": 50,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   }
+  ]
+ },
+ {
+  "id": "interface",
+  "label": "INTERFACE",
+  "items": [
+   {
+    "key": "damageNumbers",
+    "label": "Damage Numbers",
+    "type": "choice",
+    "options": [
+     "Enhanced",
+     "Legacy",
+     "Off"
+    ],
+    "default": "Enhanced"
+   },
+   {
+    "key": "damageNumberScale",
+    "label": "Damage Number Size",
+    "type": "slider",
+    "min": 0.5,
+    "max": 2,
+    "step": 0.1,
+    "default": 1,
+    "format": "percent"
+   },
+   {
+    "key": "damageNumberOpacity",
+    "label": "Damage Number Opacity",
+    "type": "slider",
+    "min": 0.2,
+    "max": 1,
+    "step": 0.05,
+    "default": 1,
+    "format": "percent"
+   },
+   {
+    "key": "compactDamageNumbers",
+    "label": "Compact Numbers (12.3k)",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "boldDamageNumbers",
+    "label": "Bold Damage Numbers",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "affinityNumbers",
+    "label": "Show Affinity Numbers",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "showHud",
+    "label": "Show HUD",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "hudScale",
+    "label": "HUD Scale",
+    "type": "slider",
+    "default": 100,
+    "min": 50,
+    "max": 150,
+    "step": 5
+   },
+   {
+    "key": "hudOpacity",
+    "label": "HUD Opacity",
+    "type": "slider",
+    "min": 0.3,
+    "max": 1,
+    "step": 0.05,
+    "default": 1,
+    "format": "percent"
+   },
+   {
+    "key": "showDebugInfo",
+    "label": "Show Position Read-out",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "enemyNames",
+    "label": "Show Enemy Names",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "enemyHealthBars",
+    "label": "Show Health over Enemies",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "subtitles",
+    "label": "Show Subtitles",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "itemLabels",
+    "label": "Item Labels",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "tennoGuide",
+    "label": "Show Tenno Guide",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "hudMotion",
+    "label": "Enable HUD Motion",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "uiInScreenshots",
+    "label": "Show UI In Screenshots",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "menuScale",
+    "label": "Menu Scale",
+    "type": "choice",
+    "options": [
+     "Small",
+     "Medium",
+     "Large"
+    ],
+    "default": "Medium"
+   },
+   {
+    "key": "cursorScale",
+    "label": "Cursor Scale",
+    "type": "slider",
+    "default": 100,
+    "min": 50,
+    "max": 150,
+    "step": 5
+   },
+   {
+    "key": "mouseCursor",
+    "label": "Mouse Cursor",
+    "type": "choice",
+    "options": [
+     "Default",
+     "Large",
+     "Crosshair"
+    ],
+    "default": "Default"
+   },
+   {
+    "key": "numericSeparators",
+    "label": "Numeric Separators",
+    "type": "choice",
+    "options": [
+     "1,000",
+     "1.000",
+     "1 000",
+     "1000"
+    ],
+    "default": "1,000"
+   },
+   {
+    "key": "lockMapRotation",
+    "label": "Lock Map Rotation",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "overlayMap",
+    "label": "Prefer Overlay Map",
+    "type": "toggle",
+    "default": false
+   }
+  ]
+ },
+ {
+  "id": "video",
+  "label": "VIDEO",
+  "items": [
+   {
+    "key": "displayMode",
+    "label": "Display Mode",
+    "type": "choice",
+    "options": [
+     "Fullscreen",
+     "Borderless",
+     "Windowed"
+    ],
+    "default": "Borderless"
+   },
+   {
+    "key": "verticalSync",
+    "label": "Vertical Sync",
+    "type": "choice",
+    "options": [
+     "Off",
+     "On"
+    ],
+    "default": "Off"
+   },
+   {
+    "key": "maxFramerate",
+    "label": "Max Framerate",
+    "type": "choice",
+    "options": [
+     "Unlimited",
+     "60",
+     "120",
+     "144"
+    ],
+    "default": "Unlimited"
+   },
+   {
+    "key": "qualityPreset",
+    "label": "Quality Preset",
+    "type": "choice",
+    "options": [
+     "Low",
+     "Medium",
+     "High",
+     "Ultra"
+    ],
+    "default": "High"
+   },
+   {
+    "key": "antiAliasing",
+    "label": "Anti-Aliasing",
+    "type": "choice",
+    "options": [
+     "Off",
+     "FXAA",
+     "TAA"
+    ],
+    "default": "TAA"
+   },
+   {
+    "key": "upscalingMethod",
+    "label": "Upscaling Method",
+    "type": "choice",
+    "options": [
+     "None",
+     "Bilinear",
+     "FSR"
+    ],
+    "default": "None"
+   },
+   {
+    "key": "upscalingQuality",
+    "label": "Upscaling Quality",
+    "type": "choice",
+    "options": [
+     "Performance",
+     "Balanced",
+     "Quality"
+    ],
+    "default": "Balanced"
+   },
+   {
+    "key": "sharpening",
+    "label": "Sharpening",
+    "type": "slider",
+    "default": 0,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "brightness",
+    "label": "Brightness",
+    "type": "slider",
+    "default": 50,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "contrast",
+    "label": "Contrast",
+    "type": "slider",
+    "default": 50,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "fieldOfView",
+    "label": "Field of View",
+    "type": "slider",
+    "default": 90,
+    "min": 60,
+    "max": 110,
+    "step": 1
+   },
+   {
+    "key": "volumetricFog",
+    "label": "Volumetric Fog Quality",
+    "type": "choice",
+    "options": [
+     "Disabled",
+     "Low",
+     "Medium",
+     "High"
+    ],
+    "default": "High"
+   },
+   {
+    "key": "dynamicLighting",
+    "label": "Dynamic Lighting",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "motionBlur",
+    "label": "Motion Blur",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "depthOfField",
+    "label": "Depth of Field",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "bloom",
+    "label": "Bloom",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "filmGrain",
+    "label": "Film Grain",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "sunShadows",
+    "label": "Sun Shadows",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "enhancedDecals",
+    "label": "Enhanced Decals",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "reduceFrameLatency",
+    "label": "Reduce Frame Latency",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "showFps",
+    "label": "Show FPS",
+    "type": "toggle",
+    "default": false,
+    "note": "Frame rate, frame time, RAM. GPU and VRAM show n/a in a browser"
+   }
+  ]
+ },
+ {
+  "id": "audio",
+  "label": "AUDIO",
+  "items": [
+   {
+    "key": "masterVolume",
+    "label": "Master Volume",
+    "type": "slider",
+    "min": 0,
+    "max": 1,
+    "step": 0.05,
+    "default": 0.8,
+    "format": "percent"
+   },
+   {
+    "key": "musicVolume",
+    "label": "Music",
+    "type": "slider",
+    "min": 0,
+    "max": 1,
+    "step": 0.05,
+    "default": 0.7,
+    "format": "percent",
+    "preview": "music"
+   },
+   {
+    "key": "sfxVolume",
+    "label": "Sound Effects",
+    "type": "slider",
+    "min": 0,
+    "max": 1,
+    "step": 0.05,
+    "default": 0.9,
+    "format": "percent",
+    "preview": "sfx"
+   },
+   {
+    "key": "uiVolume",
+    "label": "Interface",
+    "type": "slider",
+    "min": 0,
+    "max": 1,
+    "step": 0.05,
+    "default": 0.8,
+    "format": "percent",
+    "preview": "ui"
+   },
+   {
+    "key": "ambienceVolume",
+    "label": "Ambience",
+    "type": "slider",
+    "min": 0,
+    "max": 1,
+    "step": 0.05,
+    "default": 0.6,
+    "format": "percent"
+   },
+   {
+    "key": "narrativeVolume",
+    "label": "Narrative Dialog Volume",
+    "type": "slider",
+    "default": 80,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "enemyVolume",
+    "label": "Enemy Volume",
+    "type": "slider",
+    "default": 80,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "companionVolume",
+    "label": "Companion Volume",
+    "type": "slider",
+    "default": 80,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "ordisVolume",
+    "label": "Ordis Dialog Volume",
+    "type": "slider",
+    "default": 80,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "noraVolume",
+    "label": "Nora Night Volume",
+    "type": "slider",
+    "default": 80,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "personalWeaponsVolume",
+    "label": "Personal Weapons Volume",
+    "type": "slider",
+    "default": 80,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "personalAbilitiesVolume",
+    "label": "Personal Abilities Volume",
+    "type": "slider",
+    "default": 80,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "combatVolume",
+    "label": "Enemy & Ally Combat Volume",
+    "type": "slider",
+    "default": 80,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "mandachordVolume",
+    "label": "Personal Mandachord Volume",
+    "type": "slider",
+    "default": 70,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "ordisTransmissions",
+    "label": "Enable Ordis Orbiter Transmissions",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "hintTransmissions",
+    "label": "Hint Transmissions",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "operatorVoice",
+    "label": "Enable Operator Voice",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "muteAll",
+    "label": "Mute All",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "muteInBackground",
+    "label": "Mute When In Background",
+    "type": "toggle",
+    "default": true
+   }
+  ]
+ },
+ {
+  "id": "accessibility",
+  "label": "ACCESSIBILITY",
+  "items": [
+   {
+    "key": "colorBlind",
+    "label": "Color Blind Compensation",
+    "type": "choice",
+    "options": [
+     "Off",
+     "Protanopia",
+     "Deuteranopia",
+     "Tritanopia"
+    ],
+    "default": "Off"
+   },
+   {
+    "key": "colorBlindStrength",
+    "label": "Color Blind Filter Strength",
+    "type": "slider",
+    "default": 50,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "visualEffectsIntensity",
+    "label": "Visual Effects Intensity",
+    "type": "slider",
+    "default": 100,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "previewVisualEffects",
+    "label": "Preview Visual Effects Intensity",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "reduceTeammateEffects",
+    "label": "Reduce Teammate Visual Effects",
+    "type": "toggle",
+    "default": false
+   },
+   {
+    "key": "screenShake",
+    "label": "Enable Screen Shake",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "recoilType",
+    "label": "Recoil Type",
+    "type": "choice",
+    "options": [
+     "Default",
+     "Reduced"
+    ],
+    "default": "Default"
+   },
+   {
+    "key": "cloakedAppearance",
+    "label": "Cloaked Appearance",
+    "type": "choice",
+    "options": [
+     "Standard",
+     "Semi-Cloak",
+     "Glow-Cloak"
+    ],
+    "default": "Standard"
+   },
+   {
+    "key": "enemyHighlights",
+    "label": "Enemy Highlights",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "enemyHighlightColor",
+    "label": "Enemy Highlight Color",
+    "type": "choice",
+    "options": [
+     "Red",
+     "Blue",
+     "Yellow",
+     "White"
+    ],
+    "default": "Red"
+   },
+   {
+    "key": "enemyHighlightIntensity",
+    "label": "Enemy Highlight Intensity",
+    "type": "slider",
+    "default": 70,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   },
+   {
+    "key": "allyHighlights",
+    "label": "Ally Highlights",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "selfHighlight",
+    "label": "Self Highlight",
+    "type": "toggle",
+    "default": true
+   },
+   {
+    "key": "allyHighlightColor",
+    "label": "Ally Highlight Color",
+    "type": "choice",
+    "options": [
+     "Blue",
+     "Green",
+     "Yellow",
+     "White"
+    ],
+    "default": "Blue"
+   },
+   {
+    "key": "allyHighlightIntensity",
+    "label": "Ally Highlight Intensity",
+    "type": "slider",
+    "default": 70,
+    "min": 0,
+    "max": 100,
+    "step": 1
+   }
+  ]
+ }
+]

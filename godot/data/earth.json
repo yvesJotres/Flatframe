@@ -1,0 +1,17 @@
+{
+  "colors": {
+    "oceanLight": "#3d8fe0",
+    "oceanMid": "#1b5fb4",
+    "oceanDeep": "#07245a",
+    "land": "#4c9a52",
+    "desert": "#c4a964",
+    "ice": "#e8f2ff",
+    "rim": "rgba(120,180,255,0.35)",
+    "outline": "rgba(140,190,255,0.5)"
+  },
+  "spin": {
+    "tilt": -0.32,
+    "land": 5,
+    "clouds": 4
+  }
+}

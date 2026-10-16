@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="128" viewBox="0 0 256 128">
+  <!-- Original vector rifle: barrel, receiver, stock, magazine, grip and sight -->
+  <g fill="#d9dde6" stroke="#20242e" stroke-width="3" stroke-linejoin="round">
+    <path d="M30 56 L178 56 L178 66 L30 66 Z"/>                       <!-- barrel -->
+    <path d="M70 46 L168 46 L172 80 L74 80 Z"/>                       <!-- receiver -->
+    <path d="M14 48 L72 48 L72 74 L14 84 Z"/>                         <!-- stock -->
+    <path d="M104 80 L120 80 L114 112 L98 112 Z"/>                    <!-- magazine -->
+    <path d="M136 80 L154 80 L150 106 L134 104 Z"/>                   <!-- grip -->
+    <path d="M160 40 L168 40 L168 46 L160 46 Z"/>                     <!-- sight -->
+    <path d="M176 52 L206 52 L206 60 L176 60 Z"/>                     <!-- muzzle brake -->
+  </g>
+  <rect x="84" y="56" width="58" height="6" fill="#ff6b35" opacity="0.8"/>  <!-- accent line -->
+</svg>

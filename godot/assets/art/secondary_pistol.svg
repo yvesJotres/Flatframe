@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Original vector pistol: slide, frame, grip and trigger guard -->
+  <g fill="#d9dde6" stroke="#20242e" stroke-width="3" stroke-linejoin="round">
+    <path d="M22 44 L100 44 L104 58 L22 58 Z"/>                       <!-- slide -->
+    <path d="M52 58 L92 58 L90 70 L54 70 Z"/>                         <!-- frame -->
+    <path d="M60 70 L84 70 L78 116 L58 116 Z"/>                       <!-- grip -->
+    <path d="M86 66 Q98 66 98 80 L94 80 Q94 72 86 72 Z"/>             <!-- trigger guard -->
+    <path d="M38 44 L38 36 L44 36 L44 44 Z"/>                         <!-- sight -->
+  </g>
+  <rect x="26" y="50" width="54" height="3" fill="#ff6b35" opacity="0.8"/>  <!-- accent line -->
+</svg>

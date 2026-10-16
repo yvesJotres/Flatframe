@@ -1,0 +1,104 @@
+{
+  "melee_swing1": {
+    "file": "swordSlash1.ogg",
+    "category": "sfx",
+    "volume": 0.7,
+    "rate": [
+      0.9,
+      1.1
+    ]
+  },
+  "melee_swing2": {
+    "file": "swordSlash2.ogg",
+    "category": "sfx",
+    "volume": 0.7,
+    "rate": [
+      0.9,
+      1.1
+    ]
+  },
+  "melee_equip1": {
+    "file": "swordEquip1.ogg",
+    "category": "sfx",
+    "volume": 0.6,
+    "rate": null
+  },
+  "melee_equip2": {
+    "file": "swordEquip2.ogg",
+    "category": "sfx",
+    "volume": 0.6,
+    "rate": null
+  },
+  "heavy_attack": {
+    "file": "meleeHeavySwing.ogg",
+    "category": "sfx",
+    "volume": 0.8,
+    "rate": null
+  },
+  "dagger_stab1": {
+    "file": "daggerStab1.ogg",
+    "category": "sfx",
+    "volume": 0.7,
+    "rate": [
+      0.9,
+      1.1
+    ]
+  },
+  "dagger_stab2": {
+    "file": "daggerStab2.ogg",
+    "category": "sfx",
+    "volume": 0.7,
+    "rate": [
+      0.9,
+      1.1
+    ]
+  },
+  "ranged_equip1": {
+    "file": "rangedEquip1.ogg",
+    "category": "sfx",
+    "volume": 1,
+    "rate": null
+  },
+  "ranged_equip2": {
+    "file": "rangedEquip2.ogg",
+    "category": "sfx",
+    "volume": 1,
+    "rate": null
+  },
+  "revive": {
+    "file": "revive.ogg",
+    "category": "sfx",
+    "volume": 0.8,
+    "rate": null
+  },
+  "launcher_music": {
+    "file": "launcher_music.mp3",
+    "category": "music",
+    "volume": 0.4,
+    "rate": null
+  },
+  "reload": {
+    "file": "primary_reload.ogg",
+    "category": "sfx",
+    "volume": 0.7,
+    "rate": null
+  },
+  "ammo_collect": {
+    "file": "ammo_collect.ogg",
+    "category": "sfx",
+    "volume": 0.7,
+    "rate": [
+      0.95,
+      1.05
+    ]
+  },
+  "loot_pick": {
+    "file": "loot_pick.ogg",
+    "category": "sfx",
+    "volume": 0.7,
+    "rate": [
+      0.95,
+      1.05
+    ]
+  }
+}
