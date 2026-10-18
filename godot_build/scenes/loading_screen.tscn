@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://cth5pvil4p1d3"]
+
+[ext_resource type="Script" uid="uid://cf52kku05lb5d" path="res://scripts/ui/loading_screen.gd" id="1_loading"]
+
+[node name="LoadingScreen" type="CanvasLayer" unique_id=687503931]
+script = ExtResource("1_loading")
+
+[node name="Root" type="Control" parent="." unique_id=1208897968]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Background" type="ColorRect" parent="Root" unique_id=1102531150]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.024, 0.024, 0.055, 1)
+
+[node name="Panel" type="VBoxContainer" parent="Root" unique_id=473497893]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Panel" unique_id=103806724]
+layout_mode = 2
+theme_override_font_sizes/font_size = 56
+text = "FLAT FRAME"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Root/Panel" unique_id=1502110760]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.42, 0.208, 1)
+theme_override_font_sizes/font_size = 14
+text = "ORIGIN SYSTEM"
+horizontal_alignment = 1
+
+[node name="Bar" type="ProgressBar" parent="Root/Panel" unique_id=711603938]
+custom_minimum_size = Vector2(360, 6)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="Status" type="Label" parent="Root/Panel" unique_id=1989564542]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.565, 0.565, 0.69, 1)
+theme_override_font_sizes/font_size = 12
+text = "Loading game files..."
+horizontal_alignment = 1
+
+[node name="Error" type="Label" parent="Root/Panel" unique_id=2044741065]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.357, 0.357, 1)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1

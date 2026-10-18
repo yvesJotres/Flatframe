@@ -1,0 +1,11 @@
+[gd_resource type="SystemFont" format=3]
+
+[sub_resource type="SystemFont" id="SystemFont_symbol"]
+font_names = PackedStringArray("Segoe UI Symbol")
+
+[sub_resource type="SystemFont" id="SystemFont_emoji"]
+font_names = PackedStringArray("Segoe UI Emoji")
+
+[resource]
+font_names = PackedStringArray("Segoe UI", "Roboto", "Arial")
+fallbacks = Array[Font]([SubResource("SystemFont_symbol"), SubResource("SystemFont_emoji")])

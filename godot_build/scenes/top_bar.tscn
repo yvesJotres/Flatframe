@@ -1,0 +1,105 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/menus/top_bar.gd" id="1_topbar"]
+[ext_resource type="Script" path="res://scripts/ui/menus/avatar_button.gd" id="2_avatar"]
+[ext_resource type="Script" path="res://scripts/ui/menus/flask_icon.gd" id="3_flask"]
+[ext_resource type="SystemFont" path="res://theme/symbol_font.tres" id="4_symbol"]
+
+[node name="TopBar" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_topbar")
+
+[node name="Avatar" type="Button" parent="."]
+layout_mode = 0
+offset_left = 96.0
+offset_top = 46.0
+offset_right = 150.0
+offset_bottom = 100.0
+script = ExtResource("2_avatar")
+
+[node name="NameBox" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 46.0
+offset_right = 150.0
+offset_bottom = 100.0
+mouse_filter = 2
+
+[node name="NameLabel" type="Label" parent="NameBox"]
+layout_mode = 0
+offset_left = 14.0
+offset_right = 186.0
+offset_bottom = 54.0
+text = "Tenno"
+vertical_alignment = 1
+clip_text = true
+
+[node name="ModeButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 156.0
+offset_top = 46.0
+offset_right = 210.0
+offset_bottom = 100.0
+theme_override_fonts/font = ExtResource("4_symbol")
+text = "🌐"
+
+[node name="InviteButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 216.0
+offset_top = 46.0
+offset_right = 270.0
+offset_bottom = 100.0
+text = "+"
+
+[node name="Underline" type="ColorRect" parent="InviteButton"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 51.0
+offset_right = 50.0
+offset_bottom = 53.0
+mouse_filter = 2
+color = Color(0.941, 0.91, 0.878, 1)
+
+[node name="ModeList" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 156.0
+offset_top = 100.0
+offset_right = 411.0
+offset_bottom = 310.0
+
+[node name="Rows" type="VBoxContainer" parent="ModeList"]
+layout_mode = 2
+
+[node name="Currency" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -400.0
+offset_top = 46.0
+offset_right = -96.0
+offset_bottom = 88.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 2
+
+[node name="Flask" type="Control" parent="Currency"]
+custom_minimum_size = Vector2(42, 42)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("3_flask")
+
+[node name="CurrencyBox" type="PanelContainer" parent="Currency"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Items" type="HBoxContainer" parent="Currency/CurrencyBox"]
+layout_mode = 2

@@ -1,0 +1,70 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/squad/squad_panel.gd" id="1_squad"]
+
+[node name="SquadPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_squad")
+
+[node name="Scrim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Body" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_right = 360.0
+offset_bottom = 400.0
+
+[node name="Scroll" type="ScrollContainer" parent="Body"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="Body/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="Body/Scroll/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.843, 0.541, 1)
+text = "SQUAD  1/4"
+
+[node name="Members" type="GridContainer" parent="Body/Scroll/Content"]
+layout_mode = 2
+columns = 1
+
+[node name="AddLabel" type="Label" parent="Body/Scroll/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.604, 0.576, 0.690, 1)
+text = "ADD SQUAD MEMBER"
+
+[node name="Form" type="HBoxContainer" parent="Body/Scroll/Content"]
+layout_mode = 2
+
+[node name="NameInput" type="LineEdit" parent="Body/Scroll/Content/Form"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Player name"
+
+[node name="AddButton" type="Button" parent="Body/Scroll/Content/Form"]
+layout_mode = 2
+text = "ADD"
+
+[node name="Message" type="Label" parent="Body/Scroll/Content"]
+layout_mode = 2
+text = ""
+
+[node name="CloseButton" type="Button" parent="Body/Scroll/Content"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "CLOSE"
