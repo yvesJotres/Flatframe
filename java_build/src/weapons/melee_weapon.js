@@ -1,0 +1,375 @@
+import { hitZone } from '../combat/hitzones.js';
+import { isStealthTarget, applyStealthHit, applyFinisherHit, alertAfterStealthKill, STEALTH } from '../combat/stealth.js';
+import { itemRankOf } from '../progression/progression.js';
+import Weapon from './weapon.js';
+import { dataLoader } from '../data/data_loader.js';
+import { adaptWeapon } from '../data/weapon_adapter.js';
+import { audioManager } from '../engine/audio.js';
+import { UNITS_PER_METER, DEFAULT_MELEE_COOLDOWN_MS, COMBO_RESET_MS, PARRY_WINDOW_SEC } from '../engine/constants.js';
+import { gameNow } from '../engine/game_clock.js';
+
+// Filled in place (not reassigned) so modules that captured this object early, like the Arsenal, see the data
+const MELEE_WEAPONS = {};
+let initialized = false;
+
+export async function initMeleeWeapons() {
+  if (initialized) return MELEE_WEAPONS;
+  const weapons = await dataLoader.getByChunk('weapons', 'melee-sword');
+  Object.assign(MELEE_WEAPONS, Object.fromEntries(weapons.map(w => [w.name, adaptWeapon(w)])));
+  initialized = true;
+  return MELEE_WEAPONS;
+}
+
+export const DEFAULT_MELEE = 'Skana';
+export { MELEE_WEAPONS };
+
+export default class MeleeWeapon extends Weapon {
+  constructor(name = DEFAULT_MELEE) {
+      if (!initialized) throw new Error('Call initMeleeWeapons() before creating MeleeWeapon');
+      const stats = MELEE_WEAPONS[name];
+      if (!stats) throw new Error('Unknown melee weapon: ' + name);
+      super(stats);
+      this.category = 'melee';
+      this.arc = ((this.attack.arc ?? 90) * Math.PI) / 180;
+      this.heavyAttackData = stats.attack?.heavyAttackData ?? null;
+      this.comboCount = 0;
+    this.comboTimer = 0;
+    this.lastMeleeTime = 0;
+    // Parry state
+    this.isParrying = false;
+    this.parryStartTime = 0;
+    this.parryWindow = PARRY_WINDOW_SEC; // seconds for perfect parry
+    this.parryDamageReduction = 0.9; // 90% damage reduction
+  }
+
+  // Parry methods
+  startParry() {
+    this.isParrying = true;
+    this.parryStartTime = gameNow();
+  }
+
+  stopParry() {
+    this.isParrying = false;
+  }
+
+  checkPerfectParry() {
+    return this.isParrying && (gameNow() - this.parryStartTime) < this.parryWindow * 1000;
+  }
+
+  findBestTarget(player, enemies, halfArc) {
+    const reach = this.range * UNITS_PER_METER;
+    let best = { target: null, distance: Infinity, angle: 0 };
+    for (const enemy of enemies) {
+      if (!enemy || enemy.hp <= 0) continue;
+      const dx = enemy.x - player.x;
+      const dy = enemy.y - player.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > reach + (enemy.radius || 0)) continue;
+      const enemyAngle = Math.atan2(dy, dx);
+      const delta = Math.atan2(Math.sin(enemyAngle - player.angle), Math.cos(enemyAngle - player.angle));
+      if (Math.abs(delta) > halfArc) continue;
+      if (dist < best.distance) {
+        best = { target: enemy, distance: dist, angle: enemyAngle };
+      }
+    }
+    return best;
+  }
+
+  fire() {}
+
+  // Wiki: 1x below 20 hits, then 2x at 20, +1x every 20 hits, capped at 12x (220 hits)
+  getComboMultiplier() {
+    if (this.comboCount < 20) return 1;
+    return Math.min(12, Math.floor(this.comboCount / 20) + 1);
+  }
+
+  /**
+   * Swing the melee weapon in an arc in front of the player.
+   * Returns an array of struck enemies on a real swing (possibly empty —
+   * a whiff), or null when the swing was gated by the cooldown.
+   */
+  melee(player, enemies = []) {
+    const now = gameNow();
+    if (now - this.lastMeleeTime < this.meleeCooldown) return null;
+
+    if (this.comboTimer > 0 && now - this.lastMeleeTime > COMBO_RESET_MS) {
+      this.comboCount = 0;
+    }
+    
+    this.lastMeleeTime = now;
+    this.comboTimer = COMBO_RESET_MS;
+    
+    // Sound: daggers use stab sounds, swords use swing sounds
+    const isDagger = this.stats.class === 'Dagger';
+    const swingSound = isDagger
+      ? (Math.random() < 0.5 ? 'dagger_stab1' : 'dagger_stab2')
+      : (Math.random() < 0.5 ? 'melee_swing1' : 'melee_swing2');
+    audioManager.play(swingSound, 0.7);
+
+    const reach = this.range * UNITS_PER_METER;
+    const halfArc = this.arc / 2;
+    const struck = [];
+    let bestTarget = null;
+    let bestDist = Infinity;
+
+    // Single pass: find all valid targets, track closest for auto-aim, apply damage
+    for (const enemy of enemies) {
+      if (!enemy || enemy.hp <= 0) continue;
+
+      const dx = enemy.x - player.x;
+      const dy = enemy.y - player.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance > reach + (enemy.radius ?? 0)) continue;
+
+      const enemyAngle = Math.atan2(dy, dx);
+      const delta = Math.atan2(Math.sin(enemyAngle - player.angle), Math.cos(enemyAngle - player.angle));
+      if (Math.abs(delta) > halfArc) continue;
+
+      // Valid target - track closest for auto-aim
+      if (distance < bestDist) {
+        bestDist = distance;
+        bestTarget = enemy;
+      }
+
+      // Apply damage
+      const hit = this.rollHit();
+      // The swing lands where the enemy stands along the aim: a headshot if that point is in its head
+      const strikeDist = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+      const isWeakspot = hitZone(enemy, player.x + Math.cos(player.angle) * strikeDist, player.y + Math.sin(player.angle) * strikeDist) === 'head';
+      // A stealth attack (the enemy cannot detect the player) is a finisher: bonus damage, true damage, invulnerable animation
+      // A knocked-down enemy is finished with a melee stab (ground finisher), before the stealth check
+      const downed = enemy.isDowned?.() ?? false;
+      const stealth = !downed && isStealthTarget(enemy);
+      const finalHit = downed ? applyFinisherHit(hit) : stealth ? applyStealthHit(hit, itemRankOf(this.name, 'weapon')) : hit;
+      enemy.takeDamage({ ...finalHit, isWeakspot, melee: true }, player.x, player.y);
+      if (downed) {
+        player.finisherTimer = STEALTH.finisherSeconds;
+        if (enemy.hp <= 0) alertAfterStealthKill(enemy, enemies);
+      }
+      if (stealth) {
+        player.finisherTimer = STEALTH.finisherSeconds;
+        if (enemy.hp <= 0) alertAfterStealthKill(enemy, enemies);
+      }
+      struck.push(enemy);
+    }
+
+    // Auto-aim toward closest target
+    if (bestTarget) {
+      player.angle = Math.atan2(bestTarget.y - player.y, bestTarget.x - player.x);
+    }
+
+    if (struck.length > 0) {
+      this.comboCount += struck.length;
+    }
+
+    return struck;
+  }
+
+  update(dt) {
+    super.update(dt);
+    if (this.comboTimer > 0) {
+      this.comboTimer -= dt * 1000;
+      if (this.comboTimer <= 0) this.comboCount = 0;
+    }
+  }
+
+  /**
+   * Heavy attack: consumes current combo multiplier for massive burst,
+   * resets combo count to 0, plays heavy_attack sound.
+   * Gated by wind-up / heavy cooldown (defaults to 0.6s or attack.windUp).
+   */
+  // The enemy within reach that X would finish: a knocked-down enemy first, otherwise an unaware one (a stealth attack),
+  // or null. Stealth targets are unalerted or blinded enemies in reach (see combat/stealth.js).
+  finisherTargetFor(player, enemies = []) {
+    const reach = this.range * UNITS_PER_METER;
+    let best = null;
+    let bestDist = Infinity;
+    let bestIsDowned = false;
+    for (const enemy of enemies) {
+      if (!enemy || !(enemy.hp > 0)) continue;
+      const downed = enemy.isDowned?.() ?? false;
+      if (!downed && !isStealthTarget(enemy)) continue;
+      const d = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+      if (d > reach + (enemy.radius ?? 0)) continue;
+      // A downed enemy beats a closer unaware one
+      if (best && bestIsDowned && !downed) continue;
+      if ((downed && !bestIsDowned) || d < bestDist) { best = enemy; bestDist = d; bestIsDowned = downed; }
+    }
+    return best;
+  }
+
+  // A finisher stab (X): a ground finisher on a knocked-down enemy, or a stealth attack on an unaware one.
+  // Returns true when it was done.
+  finish(player, enemy, enemies = []) {
+    if (!enemy) return false;
+    const downed = enemy.isDowned?.() ?? false;
+    if (!downed && !isStealthTarget(enemy)) return false;
+    const hit = this.rollHit();
+    enemy.takeDamage({ ...(downed ? applyFinisherHit(hit) : applyStealthHit(hit, itemRankOf(this.name, 'weapon'))), melee: true }, player.x, player.y);
+    player.finisherTimer = STEALTH.finisherSeconds;
+    if (enemy.hp <= 0) alertAfterStealthKill(enemy, enemies);
+    audioManager.play(this.attack?.sound ?? 'melee_swing1', 0.7);
+    return true;
+  }
+
+  heavyAttack(player, enemies = []) {
+    const now = gameNow();
+    const windUp = (this.heavyAttackData?.windUp ?? 0.6) * 1000;
+    if (now - this.lastMeleeTime < windUp) return null;
+
+    this.lastMeleeTime = now;
+    this.comboTimer = 0;
+    audioManager.play('heavy_attack', 0.85);
+
+    const heavyStats = this.heavyAttackData ?? this.attack;
+    const range = heavyStats.range ?? this.range;
+    const reach = range * UNITS_PER_METER;
+    const arc = (((heavyStats.arc ?? 140) * Math.PI) / 180);
+    const halfArc = arc / 2;
+    const multiplier = this.getComboMultiplier();
+    const struck = [];
+    let bestTarget = null;
+    let bestDist = Infinity;
+
+    // Base damage for heavy (from heavy def, or 2x normal base)
+    const heavyBase = heavyStats.damage
+      ? Object.values(heavyStats.damage).reduce((sum, v) => sum + v, 0)
+      : this.totalDamage * 2;
+
+    // Single pass: find all valid targets, track closest for auto-aim, apply damage
+    for (const enemy of enemies) {
+      if (!enemy || enemy.hp <= 0) continue;
+
+      const dx = enemy.x - player.x;
+      const dy = enemy.y - player.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance > reach + (enemy.radius ?? 0)) continue;
+
+      const enemyAngle = Math.atan2(dy, dx);
+      const delta = Math.atan2(Math.sin(enemyAngle - player.angle), Math.cos(enemyAngle - player.angle));
+      if (Math.abs(delta) > halfArc) continue;
+
+      // Valid target - track closest for auto-aim
+      if (distance < bestDist) {
+        bestDist = distance;
+        bestTarget = enemy;
+      }
+
+      // Heavy attack: base damage * combo multiplier, with critical rolls
+      const crit = Math.random() < (heavyStats.critChance ?? this.critChance);
+      const critMult = crit ? (heavyStats.critMultiplier ?? this.critMultiplier) : 1;
+      const total = heavyBase * multiplier * critMult;
+
+      const hit = {
+        impact: (heavyStats.damage?.impact ?? 0) * multiplier * critMult,
+        puncture: (heavyStats.damage?.puncture ?? 0) * multiplier * critMult,
+        slash: (heavyStats.damage?.slash ?? heavyBase) * multiplier * critMult,
+        heat: 0,
+        total,
+        crit,
+        status: Math.random() < (heavyStats.statusChance ?? this.statusChance) ? 'slash' : null,
+        isHeavy: true,
+      };
+
+      enemy.takeDamage({ ...hit, melee: true });
+      // A heavy attack knocks the enemy down (placeholder trigger: the wiki lists knockdown from melee but no exact rule)
+      enemy.knockDown?.();
+      struck.push(enemy);
+    }
+
+    // Auto-aim toward closest target
+    if (bestTarget) {
+      player.angle = Math.atan2(bestTarget.y - player.y, bestTarget.x - player.x);
+    }
+
+    // Heavy attack consumes ALL combo counter
+    this.comboCount = 0;
+    return struck;
+  }
+
+  /**
+   * Draw the persistent attack arc telegraph (dashed) when melee is equipped and idle.
+   */
+  drawTelegraph(ctx, playerAngle) {
+    const reach = this.range * UNITS_PER_METER;
+    const halfArc = this.arc / 2;
+
+    ctx.save();
+    ctx.rotate(playerAngle);
+    ctx.strokeStyle = 'rgba(255, 200, 100, 0.12)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.arc(0, 0, reach, -halfArc, halfArc);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  /**
+   * Draw the sweeping swing animation.
+   */
+  drawSwing(ctx, playerAngle, swingType, swingTimer, swingHits) {
+    const reach = this.range * UNITS_PER_METER;
+    const arcDeg = swingType === 'heavy' ? (this.heavyAttackData?.arc ?? 140) : (this.attack.arc ?? 120);
+    const halfArc = (arcDeg * Math.PI / 180) / 2;
+    const duration = swingType === 'heavy' ? 0.25 : 0.15;
+    const progress = 1 - swingTimer / duration;
+
+    ctx.save();
+    ctx.rotate(playerAngle);
+
+    ctx.strokeStyle = swingType === 'heavy'
+      ? `rgba(255, 100, 50, ${0.9 * (1 - progress)})`
+      : `rgba(255, 200, 100, ${0.8 * (1 - progress)})`;
+    ctx.lineWidth = swingType === 'heavy' ? 6 : 4;
+    ctx.lineCap = 'round';
+
+    const startAngle = -halfArc + (halfArc * 2) * (progress * 0.5);
+    const endAngle = -halfArc + (halfArc * 2) * (0.5 + progress * 0.5);
+    ctx.beginPath();
+    ctx.arc(0, 0, reach, startAngle, endAngle);
+    ctx.stroke();
+
+    ctx.fillStyle = `rgba(255, 220, 150, ${1 - progress})`;
+    for (const hit of swingHits) {
+      const localAngle = hit.angle - playerAngle;
+      const dist = Math.min(hit.distance, reach) * (0.5 + progress * 0.5);
+      ctx.beginPath();
+      ctx.arc(Math.cos(localAngle) * dist, Math.sin(localAngle) * dist, 3 + progress * 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Draw the parry visualization.
+   */
+  drawParry(ctx, playerAngle) {
+    if (!this.isParrying) return;
+
+    const parryProgress = (gameNow() - this.parryStartTime) / (this.parryWindow * 1000);
+    const parryArc = Math.PI / 2;
+    const parryRadius = 35 + Math.sin(gameNow() * 0.01) * 3;
+
+    ctx.save();
+    ctx.rotate(playerAngle);
+    ctx.strokeStyle = parryProgress < 1
+      ? `rgba(100, 200, 255, ${0.8 * (1 - parryProgress)})`
+      : `rgba(255, 100, 100, 0.5)`;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(0, 0, parryRadius, -parryArc / 2, parryArc / 2);
+    ctx.stroke();
+
+    if (parryProgress < 0.5) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * (1 - parryProgress * 2)})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, 15 * (1 - parryProgress * 2), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}

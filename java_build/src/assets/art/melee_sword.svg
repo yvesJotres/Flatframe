@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Original vector sword: blade, crossguard, grip and pommel, set on a diagonal -->
+  <g transform="rotate(45 64 64)" fill="#d9dde6" stroke="#20242e" stroke-width="3" stroke-linejoin="round">
+    <path d="M60 10 L68 10 L70 84 L58 84 Z"/>                         <!-- blade -->
+    <path d="M44 84 L84 84 L84 92 L44 92 Z"/>                         <!-- crossguard -->
+    <path d="M59 92 L69 92 L69 112 L59 112 Z" fill="#4a5060"/>        <!-- grip -->
+    <circle cx="64" cy="118" r="6" fill="#ff6b35"/>                   <!-- pommel -->
+  </g>
+  <path d="M64 14 L64 80" stroke="#ff6b35" stroke-width="2" opacity="0.6" transform="rotate(45 64 64)"/>  <!-- fuller -->
+</svg>
