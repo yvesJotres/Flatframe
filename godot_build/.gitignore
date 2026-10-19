@@ -1,4 +1,0 @@
-# Godot 4 build artifacts and local editor state
-.godot/
-*.translation
-export_presets.cfg
