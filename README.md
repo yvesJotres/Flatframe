@@ -2,7 +2,7 @@
 
 A 2D top-down, Warframe-inspired shooter that runs in the browser. It is written in plain JavaScript (ES modules) with the HTML5 Canvas and has no build step and no runtime dependencies.
 
-**Current version:** 1.6.0 — see the [releases page](https://github.com/yvesJotres/Flatframe/releases).
+**Current version:** 1.7.0 — see the [releases page](https://github.com/yvesJotres/Flatframe/releases).
 
 ---
 
