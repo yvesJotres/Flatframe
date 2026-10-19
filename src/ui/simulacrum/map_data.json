@@ -1,0 +1,15 @@
+{
+  "bounds": { "width": 1600, "height": 1200 },
+  "platform": { "x": 100, "y": 300, "width": 1400, "height": 600 },
+  "walls": [
+    { "x": 100, "y": 300, "width": 1400, "height": 20 },
+    { "x": 100, "y": 880, "width": 1400, "height": 20 }
+  ],
+  "playerStart": { "x": 300, "y": 600 },
+  "console": { "x": 300, "y": 720 },
+  "spawns": [
+    { "type": "primary", "x": 1300, "y": 600 },
+    { "type": "secondary", "x": 1250, "y": 400 },
+    { "type": "secondary", "x": 1250, "y": 800 }
+  ]
+}

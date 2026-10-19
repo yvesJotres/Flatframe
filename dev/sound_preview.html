@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flatframe - Sound Preview</title>
+  <style>
+    :root { --bg: #0a0a0c; --panel: #111116; --line: #2a2a35; --text: #e0e0e0; --muted: #888; --ok: #4ade80; --warn: #fbbf24; }
+    :root:not([data-theme="light"]) { color-scheme: dark; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px system-ui, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+    h1 { font-size: 18px; margin: 4px 0 0; }
+    p.note { color: var(--muted); margin: 0; font-size: 12px; line-height: 1.5; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+    select, input, textarea { background: #1a1a22; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; font: inherit; }
+    textarea { font-family: ui-monospace, Consolas, monospace; font-size: 12px; min-height: 260px; resize: vertical; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    button { background: #1e1e26; border: 1px solid var(--line); color: #ddd; padding: 8px 12px; border-radius: 4px; cursor: pointer; font: inherit; }
+    button:hover { border-color: #444; color: #fff; }
+    button.primary { border-color: var(--ok); color: var(--ok); }
+    #stats { font-family: ui-monospace, Consolas, monospace; font-size: 12px; white-space: pre; line-height: 1.6; }
+    .warn { color: var(--warn); }
+    .ok { color: var(--ok); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Sound Preview</h1>
+  <p class="note">
+    Plays the real generator from <code>src/engine/procedural_sounds.js</code>. Edit the profile below and listen
+    before the change goes into the game. "Burst" fires 6 shots at the Braton's rate (8.75/s).
+    Tail check: if the sound is still loud when the next shot lands, consecutive shots will blur together.
+  </p>
+
+  <div class="panel">
+    <div class="row">
+      <label style="flex:1">Profile
+        <select id="profile"></select>
+      </label>
+      <label>Volume
+        <input id="volume" type="range" min="0" max="1" step="0.05" value="0.35" />
+      </label>
+      <label>Shots/s
+        <input id="rate" type="number" min="1" max="20" step="0.25" value="8.75" style="width:80px" />
+      </label>
+    </div>
+    <label>Profile JSON (edit, then press Play)
+      <textarea id="json" spellcheck="false"></textarea>
+    </label>
+    <div class="row">
+      <button id="single" class="primary">Play single shot</button>
+      <button id="burst" class="primary">Play burst (6 shots)</button>
+      <button id="reset">Reset to saved profile</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="label" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">Measurements</div>
+    <div id="stats">Press a play button to measure.</div>
+  </div>
+</main>
+
+<script type="module">
+  import { createGunshot, GUNSHOT_PROFILES } from '../src/engine/procedural_sounds.js';
+
+  const $ = (id) => document.getElementById(id);
+  const SAMPLE_RATE = 44100;
+  let actx = null;
+
+  // AudioContext is created on the first click (browser autoplay policy).
+  function audio() {
+    if (!actx) actx = new AudioContext();
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+
+  // Fill the profile dropdown from the game's own profiles.
+  for (const name of Object.keys(GUNSHOT_PROFILES)) {
+    $('profile').append(new Option(name, name));
+  }
+  $('profile').value = 'braton';
+
+  function loadProfile() {
+    $('json').value = JSON.stringify(GUNSHOT_PROFILES[$('profile').value], null, 2);
+  }
+  $('profile').addEventListener('change', loadProfile);
+  $('reset').addEventListener('click', loadProfile);
+  loadProfile();
+
+  // Parse the editor, or show why it is invalid without playing anything.
+  function readProfile() {
+    try {
+      return JSON.parse($('json').value);
+    } catch (err) {
+      $('stats').innerHTML = `<span class="warn">Invalid JSON: ${err.message}</span>`;
+      return null;
+    }
+  }
+
+  // Generate one shot with the real game code. The fake context only needs
+  // createBuffer + sampleRate; the real AudioContext is used for playback.
+  function renderShot(profile) {
+    const ctx = { sampleRate: SAMPLE_RATE, createBuffer: (ch, len, sr) => {
+      const data = new Float32Array(len);
+      return { sampleRate: sr, getChannelData: () => data };
+    } };
+    return createGunshot(ctx, profile).getChannelData(0);
+  }
+
+  function rms(data, from = 0, to = data.length) {
+    let s = 0;
+    for (let i = from; i < to; i++) s += data[i] * data[i];
+    return Math.sqrt(s / Math.max(1, to - from));
+  }
+
+  // Measure one shot and check that its tail is quiet when the next shot lands.
+  function report(shot, interval) {
+    let peak = 0;
+    for (const v of shot) peak = Math.max(peak, Math.abs(v));
+    const nextAt = Math.floor(SAMPLE_RATE * interval);
+    const tail = nextAt < shot.length ? rms(shot, nextAt) : 0;
+    const smear = tail > 0.02;
+    $('stats').innerHTML = [
+      `length        ${(shot.length / SAMPLE_RATE).toFixed(3)} s`,
+      `peak          ${peak.toFixed(3)} ${peak > 0.95 ? '<span class="warn">(near clipping)</span>' : ''}`,
+      `shot interval ${interval.toFixed(3)} s`,
+      `tail at next  ${tail.toFixed(4)} RMS ${smear
+        ? '<span class="warn">: still loud, shots will blur together</span>'
+        : '<span class="ok">: quiet, shots stay separate</span>'}`,
+    ].join('\n');
+  }
+
+  function play(shotCount) {
+    const profile = readProfile();
+    if (!profile) return;
+    const rate = Math.max(1, Number($('rate').value) || 8.75);
+    const interval = shotCount > 1 ? 1 / rate : 0;
+    const shot = renderShot(profile);
+    report(shot, interval || 1 / rate);
+
+    const ctx = audio();
+    const buffer = ctx.createBuffer(1, shot.length, SAMPLE_RATE);
+    buffer.getChannelData(0).set(shot);
+    const gain = ctx.createGain();
+    gain.gain.value = Number($('volume').value);
+    gain.connect(ctx.destination);
+    for (let k = 0; k < shotCount; k++) {
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(gain);
+      src.start(ctx.currentTime + k * interval);
+    }
+  }
+
+  $('single').addEventListener('click', () => play(1));
+  $('burst').addEventListener('click', () => play(6));
+</script>
+</body>
+</html>
