@@ -4,6 +4,8 @@ A 2D top-down, Warframe-inspired shooter that runs in the browser. It is written
 
 **Current version:** 1.7.0 — see the [releases page](https://github.com/yvesJotres/Flatframe/releases).
 
+> **Status:** 1.7.0 is the last release of the Java/JavaScript build. Development moves to the Godot build, which will be maintained in its own repository. This branch stays as the stable reference for the Java version.
+
 ---
 
 ## Contents
