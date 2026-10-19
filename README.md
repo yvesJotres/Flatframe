@@ -11,7 +11,7 @@ A 2D top-down, Warframe-inspired shooter that runs in the browser. It is written
 ## Contents
 
 - [Features](#features)
-- [What's changed since v1.5.0](#whats-changed-since-v150)
+- [What's changed in v1.7.0](#whats-changed-in-v170)
 - [Quick start](#quick-start)
 - [Controls](#controls)
 - [Playing the game](#playing-the-game)
@@ -42,45 +42,20 @@ A 2D top-down, Warframe-inspired shooter that runs in the browser. It is written
 
 ---
 
-## What's changed since v1.5.0
+## What's changed in v1.7.0
 
-v1.6.0 is the first release since v1.5.0. The full diff is on GitHub: [v1.5.0...v1.6.0](https://github.com/yvesJotres/Flatframe/compare/v1.5.0...v1.6.0). It covers 9 commits, 77 changed files (about +5,600 / −1,040 lines), and the automated test count rose from **106 to 132**.
-
-### New features
-
-- **Economy.** Three currencies (platinum, credits, endo) with a wallet per profile. Currency toasts appear as balances change, and a top bar shows balances on the menus. New modules: `src/economy/` (wallet, currencies, rewards, selling, fusion, item upgrades).
-- **Local accounts and login.** Several profiles per browser, each with a PBKDF2-hashed password. Includes a login screen, a user panel for switching accounts, and an automatically created `Admin` profile. New modules: `src/user/` and `src/ui/login_screen.js`, `src/ui/user_panel.js`.
-- **Squad panel.** One panel shared by the squad icons on the main menu, Navigation, and Arsenal screens (`src/ui/squad.js`).
-- **Warframe definitions.** Warframe definitions and ranked stats were added in `src/warframe/warframes.js`, and the Arsenal uses them.
-- **Mod placement.** Mods are placed into slots, and the Arsenal checks whether a placement is valid (`src/mods/placement.js`).
-- **Grenades and a new enemy.** Grenades (`src/weapons/grenade.js`) are used by enemies, and a Crewman enemy has been added (`src/enemies/corpus/crewman.js`).
-- **Procedural sounds.** Gunshot, parry, and countdown-tick sounds are generated in code (`src/engine/procedural_sounds.js`).
-- **Debug tools.** Console cheats, the in-game layout editor, and a sound preview page. These are included in the release on purpose. See [Debug and developer tools](#debug-and-developer-tools).
+v1.7.0 is the last release of the Java/JavaScript build. Gameplay is unchanged from v1.6.0.
 
 ### Changed
+- **Version.** Bumped from 1.6.0 to 1.7.0 in `package.json`, `package-lock.json`, and the title screen label.
+- **Main branch.** The Java build is now the `main` branch of the repository. The previous v1.x history is kept on the `archive/main-before-java-stable` branch.
+- **README.** Added the status note, and corrected the controls and the test count.
 
-- **Arsenal and star chart rebuilt.** The Arsenal (`src/ui/menus/arsenal.js`) and star chart (`src/ui/menus/star_chart.js`) were heavily reworked, and a shared style module (`menu_style.js`) was added. Pause, profile, settings, and main menus were updated to match.
-- **Enemy and weapon updates.** Enemy AI and weapon code, including the Lancer, Trooper, Butcher, and Corpus units, were updated.
-- **Scaling.** The 70–80 level transition now uses the level difference from the base level, which follows the wiki's formulas for health, shields, and armor. Armor scaling was also adjusted.
-- **Audio.** `src/engine/audio.js` and the sound manifest were updated to use the procedural sounds.
-- **Touch controls.** Controls were updated, and touch devices are detected more simply. The sticks and buttons now also show during normal missions.
-- **Loot.** Loot drop and pickup logic was updated (`src/pickups/loot.js`).
-- **Version.** Bumped from 1.5.0 to 1.6.0. The title screen label was corrected from `v1.4.0` to `v1.6.0`.
-- **Repository.** `.claude/` is now ignored by Git. `IDEA.md` was added.
+### Notes
+- Verified: `npm test` passes (291 tests).
+- The manual playthrough in `RELEASE_CHECKLIST.md` was not run for this release.
 
-### Fixed
-
-- Mobile: touch sticks and buttons were hidden during normal missions. They now show.
-- Touch device detection was reverted to the original logic, then simplified.
-
-### Tests
-
-- Added: `countdown_tick`, `crewman`, `procedural_sounds`, and `simulacrum_states`.
-- Updated: `loot` and `sound_library`.
-
-### Not changed
-
-- No files were removed in this release.
+For the changes that came before, see the [v1.6.0 release notes](https://github.com/yvesJotres/Flatframe/releases/tag/v1.6.0) and the [v1.5.0...v1.6.0 diff](https://github.com/yvesJotres/Flatframe/compare/v1.5.0...v1.6.0).
 
 ---
 
@@ -111,11 +86,13 @@ The game must be served over HTTP. Opening `index.html` directly from disk (`fil
 | Aim | Mouse position |
 | Fire primary / secondary | Left mouse button |
 | Reload | `R` |
-| Switch to primary / secondary | `1` / `2` |
-| Quick melee attack | `E` (or left click with a melee weapon) |
-| Heavy melee attack | Middle mouse button (melee equipped) |
+| Switch weapon | `F` (tap). Hold `F` to equip melee |
+| Quick melee attack | `E` |
+| Heavy melee attack | Middle mouse button |
 | Parry | Hold right mouse button (melee equipped) |
-| Bullet jump | `Ctrl` + `Space` |
+| Jump | `Shift` |
+| Bullet jump | Hold `Ctrl` to crouch, then press `Shift` |
+| Abilities | `1` `2` `3` `4` |
 | Self-revive while downed | Hold `X` |
 | Pause | `P` or `Esc` |
 
@@ -297,7 +274,7 @@ Audio files are listed in `src/assets/sounds/manifest.js`. Any sound that is mis
 npm test
 ```
 
-This runs `node --test` over `tests/`. The suite currently has **132 tests** across these areas:
+This runs `node --test` over `tests/`. The suite currently has **291 tests** across these areas:
 
 - Melee mechanics, combos, and parrying
 - Bleedout and revive

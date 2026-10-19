@@ -191,7 +191,7 @@ export class MainMenu {
 
       ctx.font = `12px ${FONT}`;
       ctx.fillStyle = THEME.text2.muted;
-      ctx.fillText('v1.6.0  |  WARFRAME-INSPIRED', tx, L.titleY + (L.compact ? 48 : 50));
+      ctx.fillText('v1.7.0  |  WARFRAME-INSPIRED', tx, L.titleY + (L.compact ? 48 : 50));
 
       const startY = L.startY;
     this.landingOptions.forEach((opt, i) => {
